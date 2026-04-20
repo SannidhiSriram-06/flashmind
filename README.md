@@ -11,12 +11,6 @@
 
 ---
 
-## Screenshots
-
-<!-- Add screenshots here -->
-
----
-
 ## Features
 
 - **AI Flashcard Generation** — Upload any PDF and Groq's LLaMA 3.1 generates 10 targeted flashcards automatically
@@ -30,7 +24,6 @@
 
 ---
 
-## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -143,4 +136,6 @@ flashmind/
 MIT License with Commons Clause — see [LICENSE](LICENSE) for details.
 
 Free for personal and educational use. Commercial use requires a separate license.
-Contact: sannidhisriram06@zohomail.in
+Contact: sannidhisriram8@gmail.com
+
+## Tech Stack
