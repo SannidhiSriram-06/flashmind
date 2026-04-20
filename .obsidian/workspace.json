@@ -1,0 +1,197 @@
+{
+  "main": {
+    "id": "d8b5391d4d4aa3f6",
+    "type": "split",
+    "children": [
+      {
+        "id": "321ff4a9f5f873a9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c90c147dc5b9076a",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1c039f151ddc3709",
+    "type": "split",
+    "children": [
+      {
+        "id": "52227611d16d2caf",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "96fad86b8d8f6a97",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "2b72280358e10d46",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "3a9f2228d4cab4b4",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "f2ad4e720dd727f1",
+    "type": "split",
+    "children": [
+      {
+        "id": "e4473a89d36bd62e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "61687c8d507e790a",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "11e4e30edc5d14f9",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "328a74f0c1a73c45",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "3a72984ff54b74ba",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "4a60a9d3cff22bcb",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "96fad86b8d8f6a97",
+  "lastOpenFiles": [
+    "runtime.txt",
+    "render.yaml",
+    "Procfile",
+    "Brain/flashmind-review.md",
+    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/link_lists.bin",
+    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/length.bin",
+    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/header.bin",
+    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/data_level0.bin",
+    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe",
+    "chroma_db/chroma.sqlite3-journal",
+    "uploads/f87e3b64-14f5-4a38-ad10-e1db2d704679.pdf",
+    "chroma_db/8d6eabe7-9e3b-455b-9f93-f647b38088ea/link_lists.bin",
+    "venv/lib/python3.13/site-packages/pip-26.0.1.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md",
+    "venv/lib/python3.13/site-packages/pip/_vendor/idna/LICENSE.md",
+    "venv/lib/python3.13/site-packages/~ip-25.2.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md"
+  ]
+}

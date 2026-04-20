@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FlashMind</title>
+<style>
+/* ── Variables ───────────────────────────────────────────────────────────── */
+:root {
+  --bg-color: #000000;
+  --text-color: #f5f5f7;
+  --panel-bg: rgba(255,255,255,0.05);
+  --panel-border: rgba(255,255,255,0.1);
+  --accent-gray: #86868b;
+  --nav-bg: rgba(0,0,0,0.7);
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  --transition-speed: 0.4s;
+}
+[data-theme="light"] {
+  --bg-color: #f5f5f7;
+  --text-color: #1d1d1f;
+  --panel-bg: rgba(255,255,255,0.6);
+  --panel-border: rgba(0,0,0,0.1);
+  --nav-bg: rgba(255,255,255,0.7);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+button, input { font-family: inherit; }
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  font-family: var(--font-main);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+/* ── Particles canvas ────────────────────────────────────────────────────── */
+#particle-canvas {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+
+/* ── Glass card ──────────────────────────────────────────────────────────── */
+.gc {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.gc::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at top left, rgba(255,255,255,0.1), transparent 60%);
+  z-index: 0;
+}
+.gc > * { position: relative; z-index: 1; }
+.gc-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset;
+}
+
+/* ── Gradient text ───────────────────────────────────────────────────────── */
+.grad-text {
+  background: linear-gradient(180deg, var(--text-color) 0%, rgba(255,255,255,0.7) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+[data-theme="light"] .grad-text {
+  background: linear-gradient(180deg, #1d1d1f 0%, #86868b 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+.animate-scale-in { animation: scaleIn 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeOut { to { opacity:0; transform:translateY(12px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.inp {
+  width: 100%; padding: 12px 16px;
+  border-radius: 10px; border: 1px solid var(--panel-border);
+  background: var(--panel-bg); color: var(--text-color);
+  font-size: 15px; font-family: var(--font-main);
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.inp::placeholder { color: var(--accent-gray); }
+.inp:focus { border-color: #2997ff; box-shadow: 0 0 0 3px rgba(41,151,255,0.15); }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: 10px; border: none;
+  font-family: var(--font-main); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease; letter-spacing: -0.01em;
+}
+.btn-blue  { background: #2997ff; color: #fff; }
+.btn-blue:hover { background: #0077ed; }
+.btn-ghost {
+  background: transparent; color: var(--accent-gray);
+  border: 1px solid var(--panel-border);
+}
+.btn-ghost:hover { background: var(--panel-bg); color: var(--text-color); }
+.btn-danger { background: transparent; color: #FF453A; border: 1px solid rgba(255,69,58,0.3); }
+.btn-danger:hover { background: rgba(255,69,58,0.1); }
+.btn-full { width: 100%; padding: 13px; }
+.btn-sm { padding: 8px 14px; font-size: 13px; }
+.field-error { font-size: 12px; color: #FF453A; margin-top: 5px; display: none; }
+.field-error.show { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AUTH STATE
+═══════════════════════════════════════════════════════════════════════════ */
+#auth-state {
+  display: none; min-height: 100vh;
+  align-items: center; justify-content: center; padding: 24px;
+}
+#auth-state.on { display: flex; }
+.auth-card { width: 100%; max-width: 400px; padding: 48px; }
+.auth-logo {
+  text-align: center; margin-bottom: 36px;
+  font-family: var(--font-display); font-size: 28px; font-weight: 700;
+}
+.auth-form-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; text-align: center; font-family: var(--font-display); }
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 13px; font-weight: 500; color: var(--accent-gray); margin-bottom: 6px; }
+.auth-switch { text-align: center; margin-top: 20px; font-size: 13px; color: var(--accent-gray); }
+.auth-switch a { color: #2997ff; cursor: pointer; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+.auth-error {
+  background: rgba(255,69,58,0.1); border: 1px solid rgba(255,69,58,0.3);
+  color: #FF453A; padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; margin-bottom: 16px; display: none;
+}
+.auth-error.show { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP STATE — SHELL
+═══════════════════════════════════════════════════════════════════════════ */
+#app-state { display: none; height: 100vh; }
+#app-state.on { display: flex; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+#sidebar {
+  width: 240px; min-width: 240px; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 28px 16px 20px;
+  border-radius: 0; border-top: none; border-bottom: none; border-left: none;
+  position: fixed; left: 0; top: 0; z-index: 100;
+}
+.sb-logo {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; gap: 10px; padding: 0 4px; margin-bottom: 32px;
+}
+.sb-logo span { font-size: 22px; }
+.sb-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  height: 44px; padding: 0 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  color: var(--accent-gray); transition: all 0.2s ease;
+  border: none; background: transparent; width: 100%; text-align: left;
+  font-family: var(--font-main);
+}
+.nav-item:hover { background: var(--panel-bg); color: var(--text-color); }
+.nav-item.active { background: rgba(41,151,255,0.15); color: #2997ff; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.sb-bottom { padding-top: 20px; border-top: 1px solid var(--panel-border); }
+.sb-user { display: flex; align-items: center; gap: 10px; padding: 4px 4px 16px; }
+.sb-avatar {
+  width: 40px; height: 40px; min-width: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff;
+}
+.sb-user-info { min-width: 0; }
+.sb-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-email { font-size: 12px; color: var(--accent-gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-actions { display: flex; flex-direction: column; gap: 6px; }
+.sb-actions button { width: 100%; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font-main); }
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+#main-content {
+  flex: 1; margin-left: 240px;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+/* Pill top bar */
+#top-bar-wrap { padding: 20px 32px 0; flex-shrink: 0; }
+#top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--nav-bg); border: 1px solid var(--panel-border);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 100px; padding: 12px 20px;
+  width: 100%; transition: padding 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#top-bar-title { font-size: 15px; font-weight: 600; font-family: var(--font-display); }
+
+#content-area { flex: 1; overflow-y: auto; padding: 28px 32px 40px; }
+#content-area::-webkit-scrollbar { width: 5px; }
+#content-area::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+/* ─── Section views ──────────────────────────────────────────────────────── */
+.view { display: none; }
+.view.on { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME VIEW
+═══════════════════════════════════════════════════════════════════════════ */
+.greeting {
+  font-family: var(--font-display); font-size: 28px; font-weight: 700;
+  letter-spacing: -0.5px; margin-bottom: 28px;
+}
+.upload-card {
+  border: 2px dashed rgba(255,255,255,0.2); padding: 48px 32px;
+  text-align: center; cursor: pointer; margin-bottom: 36px;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+[data-theme="light"] .upload-card { border-color: rgba(0,0,0,0.15); }
+.upload-card:hover, .upload-card.drag-over { border-color: #2997ff; background: rgba(41,151,255,0.04); }
+.upload-card input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-card-icon { font-size: 2rem; display: block; margin-bottom: 12px; }
+.upload-card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.upload-card-sub { font-size: 13px; color: var(--accent-gray); }
+.section-label {
+  font-size: 13px; font-weight: 600; color: var(--accent-gray);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.section-label a { font-size: 13px; color: #2997ff; cursor: pointer; text-transform: none; letter-spacing: 0; text-decoration: none; }
+.section-label a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DECK CARDS GRID
+═══════════════════════════════════════════════════════════════════════════ */
+.decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 20px; }
+.deck-card {
+  padding: 22px; cursor: default; transform-style: preserve-3d; will-change: transform;
+  opacity: 0; animation: slideUp 0.4s ease forwards;
+}
+/* Staggered entrance: JS sets --i on each card */
+.deck-card { animation-delay: calc(var(--i, 0) * 60ms); }
+.deck-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.deck-card-name { font-size: 15px; font-weight: 700; flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.deck-card-del { background: none; border: none; color: var(--accent-gray); cursor: pointer; font-size: 13px; padding: 3px 7px; border-radius: 6px; transition: all 0.15s; line-height: 1; flex-shrink: 0; }
+.deck-card-del:hover { color: #FF453A; background: rgba(255,69,58,0.1); }
+.deck-card-meta { font-size: 12px; color: var(--accent-gray); margin-bottom: 10px; }
+.due-badge {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 16px;
+}
+.due-badge.has { background: rgba(41,151,255,0.15); color: #2997ff; }
+.due-badge.clear { background: rgba(48,209,88,0.12); color: #30D158; }
+.deck-study-btn { width: 100%; padding: 10px; border-radius: 10px; border: none; background: #2997ff; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-main); transition: background 0.2s; }
+.deck-study-btn:hover { background: #0077ed; }
+.empty-state { text-align: center; padding: 60px 24px; color: var(--accent-gray); }
+.empty-state-icon { font-size: 3rem; display: block; margin-bottom: 14px; }
+.empty-state-title { font-size: 16px; font-weight: 600; color: var(--text-color); margin-bottom: 6px; }
+.empty-state-sub { font-size: 13px; }
+
+/* Search */
+.search-wrap { margin-bottom: 22px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATS VIEW
+═══════════════════════════════════════════════════════════════════════════ */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.stat-card { padding: 24px; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--accent-gray); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+.stat-value { font-size: 2.6rem; font-weight: 700; font-family: var(--font-display); line-height: 1; letter-spacing: -1px; }
+.stat-unit  { font-size: 12px; color: var(--accent-gray); margin-top: 4px; }
+.streak-card { padding: 24px 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 18px; }
+.streak-card-icon { font-size: 2.2rem; }
+.streak-card-info h3 { font-size: 1.2rem; font-weight: 700; font-family: var(--font-display); }
+.streak-card-info p  { font-size: 13px; color: var(--accent-gray); margin-top: 3px; }
+.chart-card { padding: 24px; }
+.chart-title { font-size: 12px; font-weight: 600; color: var(--accent-gray); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 20px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; position: relative; }
+.bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.bar-fill { width: 100%; background: #2997ff; border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(0.4,0,0.2,1); min-height: 3px; opacity: 0.8; }
+.bar-fill.empty-bar { background: var(--panel-border); opacity: 1; }
+.bar-label { font-size: 10px; color: var(--accent-gray); white-space: nowrap; }
+.bar-col:hover .bar-fill:not(.empty-bar) { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HISTORY VIEW
+═══════════════════════════════════════════════════════════════════════════ */
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+.history-item { padding: 18px 22px; display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 16px; }
+.history-date { font-size: 13px; font-weight: 700; color: var(--accent-gray); }
+.history-total { font-size: 14px; font-weight: 600; }
+.history-sub   { font-size: 12px; color: var(--accent-gray); margin-top: 3px; }
+.history-pct   { font-size: 16px; font-weight: 700; }
+.history-empty { text-align: center; padding: 48px; color: var(--accent-gray); font-size: 14px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDY MODE (full screen)
+═══════════════════════════════════════════════════════════════════════════ */
+#study-mode {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background-color: var(--bg-color);
+  flex-direction: column; align-items: center;
+}
+#study-mode.on { display: flex; }
+.study-topbar {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px; flex-shrink: 0;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.study-deck-name { font-size: 15px; font-weight: 600; flex: 1; text-align: center; padding: 0 16px; }
+.study-counter { font-size: 13px; color: var(--accent-gray); white-space: nowrap; }
+.study-progress-wrap { width: 100%; height: 4px; background: var(--panel-border); flex-shrink: 0; }
+.study-progress-fill { height: 100%; background: #2997ff; transition: width 0.4s ease; }
+.study-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; gap: 24px; width: 100%; max-width: 680px; }
+
+/* Flip card */
+.flip-scene { perspective: 1200px; width: 100%; height: 300px; cursor: pointer; }
+.flip-inner {
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+.flip-inner.flipped { transform: rotateY(180deg); }
+.flip-face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: 20px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 36px 32px; text-align: center;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+.flip-back-face { transform: rotateY(180deg); background: rgba(41,151,255,0.06); }
+.flip-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-gray); margin-bottom: 16px; }
+.flip-text  { font-size: 1.15rem; font-weight: 600; line-height: 1.55; color: var(--text-color); }
+.flip-hint  { font-size: 13px; color: var(--accent-gray); }
+.review-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
+.review-btn { padding: 14px; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font-main); transition: all 0.2s; }
+.review-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.study-completion { display: none; text-align: center; width: 100%; }
+.study-completion.on { display: block; }
+.comp-emoji { font-size: 3.5rem; margin-bottom: 16px; }
+.comp-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+.comp-sub   { font-size: 14px; color: var(--accent-gray); margin-bottom: 28px; }
+.comp-stats { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
+.comp-stat  { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 18px 22px; min-width: 100px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.comp-stat-num { font-size: 2rem; font-weight: 700; line-height: 1; }
+.comp-stat-lbl { font-size: 12px; color: var(--accent-gray); margin-top: 4px; }
+.comp-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OVERLAYS
+═══════════════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  align-items: center; justify-content: center; padding: 24px;
+}
+.modal-overlay.on { display: flex; }
+.modal-box { width: 100%; max-width: 380px; padding: 36px; text-align: center; }
+.modal-emoji { font-size: 2.4rem; margin-bottom: 12px; }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; font-family: var(--font-display); }
+.modal-sub   { font-size: 14px; color: var(--accent-gray); margin-bottom: 24px; }
+.modal-form-row { margin-bottom: 16px; text-align: left; }
+.modal-form-row label { display: block; font-size: 13px; color: var(--accent-gray); margin-bottom: 6px; }
+.modal-error { background: rgba(255,69,58,0.1); border: 1px solid rgba(255,69,58,0.3); color: #FF453A; padding: 10px; border-radius: 8px; font-size: 13px; display: none; margin-bottom: 14px; }
+.modal-error.show { display: block; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+
+/* ── Full-screen loader ──────────────────────────────────────────────────── */
+#fullscreen-loader {
+  display: none; position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  align-items: center; justify-content: center;
+}
+#fullscreen-loader.on { display: flex; }
+.loader-box { text-align: center; padding: 40px 56px; }
+.loader-spinner { width: 40px; height: 40px; border: 3px solid var(--panel-border); border-top-color: #2997ff; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+.loader-text { font-size: 15px; color: var(--accent-gray); font-weight: 500; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+#toast-container { position: fixed; bottom: 80px; right: 24px; z-index: 950; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+.toast {
+  max-width: 320px; padding: 14px 18px; border-radius: 12px;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  font-size: 13px; font-weight: 500; color: var(--text-color);
+  animation: slideUp 0.3s ease forwards;
+}
+.toast.success { border-left: 3px solid #30D158; }
+.toast.error   { border-left: 3px solid #FF453A; }
+.toast.dismiss { animation: fadeOut 0.3s ease forwards; }
+
+/* ── Floating buttons ────────────────────────────────────────────────────── */
+.float-btn {
+  width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-size: 20px; transition: all 0.2s; color: var(--text-color);
+  display: flex; align-items: center; justify-content: center;
+}
+.float-btn:hover { transform: scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+#floating-stack { position: fixed; bottom: 24px; right: 24px; z-index: 700; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.float-btn-wrap { position: relative; }
+.float-tooltip {
+  position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--text-color); font-size: 12px; font-weight: 500; font-family: var(--font-main);
+  padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  opacity: 0; pointer-events: none; transition: opacity 0.15s;
+}
+.float-btn-wrap:hover .float-tooltip { opacity: 1; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════════ AUTH STATE ════════ -->
+<div id="auth-state">
+  <!-- Login -->
+  <div id="login-card" class="gc auth-card animate-scale-in">
+    <div class="auth-logo"><span>⚡</span> <span class="grad-text">FlashMind</span></div>
+    <div class="auth-form-title">Sign in</div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="form-row"><label>Email</label><input class="inp" type="email" id="li-email" placeholder="you@example.com"/></div>
+    <div class="form-row" style="margin-bottom:20px"><label>Password</label><input class="inp" type="password" id="li-pass" placeholder="••••••••"/></div>
+    <button class="btn btn-blue btn-full" onclick="doLogin()">Sign In</button>
+    <div class="auth-switch">Don't have an account? <a onclick="swapAuth('signup')">Sign up →</a></div>
+  </div>
+
+  <!-- Signup -->
+  <div id="signup-card" class="gc auth-card animate-scale-in" style="display:none">
+    <div class="auth-logo"><span>⚡</span> <span class="grad-text">FlashMind</span></div>
+    <div class="auth-form-title">Create account</div>
+    <div class="auth-error" id="signup-error"></div>
+    <div class="form-row"><label>Display Name</label><input class="inp" type="text" id="su-name" placeholder="Your name"/></div>
+    <div class="form-row"><label>Email</label><input class="inp" type="email" id="su-email" placeholder="you@example.com"/></div>
+    <div class="form-row" style="margin-bottom:20px"><label>Password <span style="color:var(--accent-gray);font-weight:400">(min 8 chars)</span></label><input class="inp" type="password" id="su-pass" placeholder="••••••••"/></div>
+    <button class="btn btn-blue btn-full" onclick="doSignup()">Create Account</button>
+    <div class="auth-switch">Already have an account? <a onclick="swapAuth('login')">Sign in →</a></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ APP STATE ═══════════ -->
+<div id="app-state">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="gc">
+    <div class="sb-logo"><span>⚡</span><span class="grad-text">FlashMind</span></div>
+    <nav class="sb-nav">
+      <button class="nav-item active" data-v="home"    onclick="showView('home')"   ><span class="nav-icon">🏠</span> Home</button>
+      <button class="nav-item"        data-v="decks"   onclick="showView('decks')"  ><span class="nav-icon">📚</span> My Decks</button>
+      <button class="nav-item"        data-v="stats"   onclick="showView('stats')"  ><span class="nav-icon">📊</span> Stats</button>
+      <button class="nav-item"        data-v="history" onclick="showView('history')"><span class="nav-icon">🕐</span> History</button>
+    </nav>
+    <div class="sb-bottom">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sb-avatar">?</div>
+        <div class="sb-user-info">
+          <div class="sb-name"  id="sb-name">—</div>
+          <div class="sb-email" id="sb-email">—</div>
+        </div>
+      </div>
+      <div class="sb-actions">
+        <button class="btn-ghost" style="background:transparent;border:1px solid var(--panel-border);color:var(--accent-gray);padding:8px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-main)" onclick="doLogout()">Sign Out</button>
+        <button style="background:transparent;border:1px solid rgba(255,69,58,0.3);color:#FF453A;padding:8px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-main);transition:all .2s" onmouseover="this.style.background='rgba(255,69,58,0.1)'" onmouseout="this.style.background='transparent'" onclick="openDeleteAccount()">Delete Account</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div id="main-content">
+    <div id="top-bar-wrap">
+      <div id="top-bar">
+        <div id="top-bar-title" style="font-size:15px;font-weight:600;font-family:var(--font-display)">Home</div>
+        <div style="width:1px"></div>
+      </div>
+    </div>
+
+    <div id="content-area">
+
+      <!-- HOME -->
+      <div class="view on" id="view-home">
+        <div class="greeting grad-text" id="greeting">Good day! 👋</div>
+        <div class="gc upload-card" id="drop-zone">
+          <input type="file" id="file-input" accept=".pdf"/>
+          <span class="upload-card-icon">📄</span>
+          <div class="upload-card-title">Drop your PDF here or click to browse</div>
+          <div class="upload-card-sub">PDF only · Max 10 MB · AI-generated cards</div>
+        </div>
+        <div class="section-label">
+          <span>Recent Decks</span>
+          <a onclick="showView('decks')">View all →</a>
+        </div>
+        <div class="decks-grid" id="recent-grid">
+          <div class="empty-state" style="grid-column:1/-1">
+            <span class="empty-state-icon">📚</span>
+            <div class="empty-state-title">No decks yet</div>
+            <div class="empty-state-sub">Upload your first PDF to get started</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY DECKS -->
+      <div class="view" id="view-decks">
+        <div class="search-wrap">
+          <input class="inp" type="search" id="deck-search" placeholder="🔍  Search decks…" oninput="filterDecks()"/>
+        </div>
+        <div class="decks-grid" id="all-decks-grid">
+          <div class="empty-state" style="grid-column:1/-1"><div class="loader-spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="view" id="view-stats">
+        <div class="stats-grid">
+          <div class="gc stat-card">
+            <div class="stat-label">Total Decks</div>
+            <div class="stat-value grad-text" id="s-decks">—</div>
+          </div>
+          <div class="gc stat-card">
+            <div class="stat-label">Cards Studied</div>
+            <div class="stat-value grad-text" id="s-cards">—</div>
+          </div>
+          <div class="gc stat-card">
+            <div class="stat-label">Sessions</div>
+            <div class="stat-value grad-text" id="s-sessions">—</div>
+          </div>
+          <div class="gc stat-card">
+            <div class="stat-label">Average Score</div>
+            <div class="stat-value grad-text" id="s-avg">—</div>
+            <div class="stat-unit">% correct</div>
+          </div>
+        </div>
+        <div class="gc streak-card">
+          <div class="streak-card-icon">🔥</div>
+          <div class="streak-card-info">
+            <h3 id="s-streak">0 day streak</h3>
+            <p>Best consecutive days with at least one study session</p>
+          </div>
+        </div>
+        <div class="gc chart-card">
+          <div class="chart-title">Last 7 Days</div>
+          <div class="bar-chart" id="bar-chart"><div style="color:var(--accent-gray);font-size:13px">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="view" id="view-history">
+        <div class="history-list" id="history-list">
+          <div class="history-empty">Loading history…</div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-content -->
+</div><!-- /app-state -->
+
+<!-- ════════════════════════════════════════════════ STUDY MODE ══════════ -->
+<div id="study-mode">
+  <div class="study-topbar">
+    <button class="btn btn-ghost btn-sm" onclick="exitStudy()">← Back</button>
+    <div class="study-deck-name" id="study-deck-name"></div>
+    <div class="study-counter" id="study-counter"></div>
+  </div>
+  <div class="study-progress-wrap"><div class="study-progress-fill" id="study-progress" style="width:0%"></div></div>
+
+  <div class="study-body">
+    <div id="study-card-area" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:20px">
+      <div class="flip-scene" id="flip-scene" onclick="flipCard()">
+        <div class="flip-inner" id="flip-inner">
+          <div class="flip-face">
+            <div class="flip-label">Question</div>
+            <div class="flip-text" id="flip-front"></div>
+          </div>
+          <div class="flip-face flip-back-face">
+            <div class="flip-label">Answer</div>
+            <div class="flip-text" id="flip-back"></div>
+          </div>
+        </div>
+      </div>
+      <div class="flip-hint" id="flip-hint">Click card to reveal answer</div>
+      <div class="review-row" id="review-row" style="display:none">
+        <button class="review-btn" style="background:#FF9F0A;color:#fff" onclick="submitReview('dont_know')">Still learning ↺</button>
+        <button class="review-btn" style="background:#30D158;color:#fff" onclick="submitReview('know')">Got it ✓</button>
+      </div>
+    </div>
+
+    <div class="study-completion" id="study-completion">
+      <div class="comp-emoji">🎉</div>
+      <div class="comp-title grad-text">Deck Complete!</div>
+      <div class="comp-sub" id="comp-sub"></div>
+      <div class="comp-stats">
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-total" style="color:var(--text-color)">0</div><div class="comp-stat-lbl">Total</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-know"  style="color:#30D158">0</div><div class="comp-stat-lbl">Got it</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-dont"  style="color:#FF9F0A">0</div><div class="comp-stat-lbl">Still learning</div></div>
+      </div>
+      <div class="comp-btns">
+        <button class="btn btn-blue btn-lg" style="padding:13px 28px;font-size:15px" onclick="studyAgain()">Study Again ↺</button>
+        <button class="btn btn-ghost btn-lg" style="padding:13px 28px;font-size:15px" onclick="exitStudy()">Back to Decks</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ MODALS ══════════ -->
+<!-- Delete deck -->
+<div class="modal-overlay" id="modal-deck">
+  <div class="gc modal-box">
+    <div class="modal-emoji">🗑️</div>
+    <div class="modal-title">Delete deck?</div>
+    <div class="modal-sub" id="modal-deck-sub">This cannot be undone.</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeDeckModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="execDeleteDeck()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete account -->
+<div class="modal-overlay" id="modal-account">
+  <div class="gc modal-box">
+    <div class="modal-emoji">⚠️</div>
+    <div class="modal-title">Delete your account?</div>
+    <div class="modal-sub">This permanently deletes your account, all decks, and study history. Cannot be undone.</div>
+    <div class="modal-form-row">
+      <label>Confirm your password</label>
+      <input class="inp" type="password" id="del-acc-pass" placeholder="••••••••"/>
+    </div>
+    <div class="modal-error" id="del-acc-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeAccountModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="execDeleteAccount()">Delete Forever</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ FULLSCREEN LOADER ═══════ -->
+<div id="fullscreen-loader">
+  <div class="gc loader-box">
+    <div class="loader-spinner"></div>
+    <div class="loader-text" id="loader-text">Processing…</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ TOASTS ════════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════ FLOATING STACK ════════ -->
+<div id="floating-stack">
+  <div class="float-btn-wrap">
+    <button class="float-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+    <div class="float-tooltip">Toggle theme</div>
+  </div>
+  <div class="float-btn-wrap">
+    <button class="float-btn" onclick="window.open('https://forms.gle/ffDUmGgiuVkZ7X8S9','_blank')">🐛</button>
+    <div class="float-tooltip">Report an issue</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SCRIPT ════════════ -->
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const S = {
+  user: null, view: 'home', allDecks: [],
+  deckId: null, deckName: '', cards: [], shuffled: [],
+  idx: 0, flipped: false, know: 0, dont: 0,
+  deleteDeckId: null,
+};
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
+function initTheme() {
+  const t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️';
+}
+function toggleTheme() {
+  const btn = document.getElementById('theme-btn');
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  btn.style.transition = 'transform 0.15s ease';
+  btn.style.transform = 'rotate(180deg) scale(0.5)';
+  setTimeout(() => {
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    btn.textContent = next === 'dark' ? '🌙' : '☀️';
+    btn.style.transform = '';
+  }, 200);
+}
+initTheme();
+
+// ─── Particles ────────────────────────────────────────────────────────────────
+(function initParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], mouse = { x: -999, y: -999 };
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+  for (let i = 0; i < 50; i++) {
+    particles.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 2,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    particles.forEach(p => {
+      const dx = p.x - mouse.x, dy = p.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        p.x += (dx / dist) * 1.2;
+        p.y += (dy / dist) * 1.2;
+      }
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, credentials: 'include', headers: {} };
+  if (body && !(body instanceof FormData)) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body) {
+    opts.body = body;
+  }
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ detail: res.statusText }));
+    throw Object.assign(new Error(e.detail || 'Request failed'), { status: res.status });
+  }
+  return res.json();
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.classList.add('dismiss'); setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+// ─── Loader ───────────────────────────────────────────────────────────────────
+function showLoader(t) { document.getElementById('loader-text').textContent = t || 'Processing…'; document.getElementById('fullscreen-loader').classList.add('on'); }
+function hideLoader()  { document.getElementById('fullscreen-loader').classList.remove('on'); }
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+async function checkAuth() {
+  try {
+    S.user = await api('GET', '/api/auth/me');
+    enterApp();
+  } catch {
+    document.getElementById('auth-state').classList.add('on');
+  }
+}
+
+function enterApp() {
+  document.getElementById('auth-state').classList.remove('on');
+  document.getElementById('app-state').classList.add('on');
+  const u = S.user;
+  const init = u.display_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  const av = document.getElementById('sb-avatar');
+  av.textContent = init; av.style.background = u.avatar_color || '#2997ff';
+  document.getElementById('sb-name').textContent  = u.display_name;
+  document.getElementById('sb-email').textContent = u.email;
+  const h = new Date().getHours();
+  const g = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  document.getElementById('greeting').textContent = `Good ${g}, ${u.display_name.split(' ')[0]}! 👋`;
+  showView('home');
+}
+
+function swapAuth(which) {
+  document.getElementById('login-card').style.display  = which === 'login'  ? '' : 'none';
+  document.getElementById('signup-card').style.display = which === 'signup' ? '' : 'none';
+}
+
+async function doLogin() {
+  const email = v('li-email'), password = v('li-pass');
+  const err = document.getElementById('login-error');
+  err.classList.remove('show');
+  if (!email || !password) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+  showLoader('Signing in…');
+  try {
+    S.user = await api('POST', '/api/auth/login', { email, password });
+    hideLoader(); enterApp();
+  } catch (e) { hideLoader(); err.textContent = e.message; err.classList.add('show'); }
+}
+
+async function doSignup() {
+  const display_name = v('su-name'), email = v('su-email'), password = v('su-pass');
+  const err = document.getElementById('signup-error');
+  err.classList.remove('show');
+  if (!display_name || !email || !password) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+  if (password.length < 8) { err.textContent = 'Password must be at least 8 characters.'; err.classList.add('show'); return; }
+  showLoader('Creating account…');
+  try {
+    S.user = await api('POST', '/api/auth/signup', { display_name, email, password });
+    hideLoader(); enterApp();
+  } catch (e) { hideLoader(); err.textContent = e.message; err.classList.add('show'); }
+}
+
+async function doLogout() {
+  await api('POST', '/api/auth/logout').catch(() => {});
+  S.user = null;
+  document.getElementById('app-state').classList.remove('on');
+  document.getElementById('auth-state').classList.add('on');
+  swapAuth('login');
+}
+
+// Enter key handlers
+document.getElementById('li-pass').addEventListener('keydown',  e => e.key === 'Enter' && doLogin());
+document.getElementById('su-pass').addEventListener('keydown',  e => e.key === 'Enter' && doSignup());
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+const VIEW_TITLES = { home:'Home', decks:'My Decks', stats:'Stats', history:'History' };
+
+function showView(name) {
+  S.view = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.getElementById('view-' + name).classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.v === name));
+  document.getElementById('top-bar-title').textContent = VIEW_TITLES[name] || name;
+  if (name === 'home')    loadHome();
+  if (name === 'decks')   loadAllDecks();
+  if (name === 'stats')   loadStats();
+  if (name === 'history') loadHistory();
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function v(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(iso) {
+  try { return 'Added ' + new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); } catch { return ''; }
+}
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; }
+  return b;
+}
+
+// ─── 3D Tilt ──────────────────────────────────────────────────────────────────
+function applyTilt(el) {
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    const cx = r.width / 2, cy = r.height / 2;
+    const rX = (y - cy) / 10, rY = (cx - x) / 10;
+    el.style.transform = `perspective(1000px) rotateX(${rX}deg) rotateY(${rY}deg) translateY(-4px)`;
+    el.style.boxShadow = '0 30px 60px -12px rgba(0,0,0,0.3)';
+  });
+  el.addEventListener('mouseleave', () => {
+    el.style.transform = '';
+    el.style.boxShadow = '';
+  });
+}
+
+// ─── Deck card HTML ───────────────────────────────────────────────────────────
+function deckHTML(d, showDel = true) {
+  const badge = d.due_count > 0
+    ? `<span class="due-badge has">Due today: ${d.due_count}</span>`
+    : `<span class="due-badge clear">All caught up ✓</span>`;
+  const del = showDel
+    ? `<button class="deck-card-del" onclick="openDeckModal('${esc(d.deck_id)}','${esc(d.name)}')" title="Delete">✕</button>`
+    : '';
+  return `
+    <div class="gc deck-card">
+      <div class="deck-card-top"><div class="deck-card-name" title="${esc(d.name)}">${esc(d.name)}</div>${del}</div>
+      <div class="deck-card-meta">${d.card_count} cards · ${fmtDate(d.created_at)}</div>
+      ${badge}
+      <button class="deck-study-btn" onclick="startStudy('${esc(d.deck_id)}')">Study →</button>
+    </div>`;
+}
+
+function attachTilts(gridId) {
+  document.querySelectorAll(`#${gridId} .deck-card`).forEach((el, i) => {
+    el.style.setProperty('--i', i);
+    applyTilt(el);
+  });
+}
+
+// ─── Home ─────────────────────────────────────────────────────────────────────
+async function loadHome() {
+  try {
+    S.allDecks = await api('GET', '/api/decks');
+    const grid = document.getElementById('recent-grid');
+    const recent = [...S.allDecks].reverse().slice(0, 3);
+    grid.innerHTML = recent.length
+      ? recent.map(d => deckHTML(d, false)).join('')
+      : `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">📚</span><div class="empty-state-title">No decks yet</div><div class="empty-state-sub">Upload your first PDF to get started</div></div>`;
+    attachTilts('recent-grid');
+  } catch { toast('Could not load decks', 'error'); }
+}
+
+// ─── All Decks ────────────────────────────────────────────────────────────────
+async function loadAllDecks() {
+  document.getElementById('all-decks-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="loader-spinner"></div></div>';
+  try {
+    S.allDecks = await api('GET', '/api/decks');
+    renderAll(S.allDecks);
+  } catch { toast('Could not load decks', 'error'); }
+}
+
+function renderAll(decks) {
+  const grid = document.getElementById('all-decks-grid');
+  grid.innerHTML = decks.length
+    ? decks.map(d => deckHTML(d, true)).join('')
+    : `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">📭</span><div class="empty-state-title">No decks yet</div><div class="empty-state-sub">Upload a PDF to create your first deck</div></div>`;
+  attachTilts('all-decks-grid');
+}
+
+function filterDecks() {
+  const q = document.getElementById('deck-search').value.toLowerCase();
+  renderAll(q ? S.allDecks.filter(d => d.name.toLowerCase().includes(q)) : S.allDecks);
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => { if (fi.files[0]) handleFile(fi.files[0]); fi.value = ''; });
+
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) { toast('Please upload a PDF file.', 'error'); return; }
+  if (file.size > 10 * 1024 * 1024) { toast('File too large — max 10 MB.', 'error'); return; }
+  const steps = ['Uploading PDF…', 'Extracting text…', 'Generating flashcards…'];
+  let si = 0; showLoader(steps[0]);
+  const tick = setInterval(() => { si = Math.min(si+1, 2); document.getElementById('loader-text').textContent = steps[si]; }, 3500);
+  try {
+    const fd = new FormData(); fd.append('file', file);
+    const res = await api('POST', '/api/upload', fd);
+    clearInterval(tick); hideLoader();
+    toast(`✓ "${res.name}" — ${res.card_count} cards ready`, 'success');
+    await loadHome();
+  } catch (e) { clearInterval(tick); hideLoader(); toast('Upload failed: ' + e.message, 'error'); }
+}
+
+// ─── Delete Deck Modal ────────────────────────────────────────────────────────
+function openDeckModal(id, name) {
+  S.deleteDeckId = id;
+  document.getElementById('modal-deck-sub').textContent = `"${name}" will be permanently deleted.`;
+  document.getElementById('modal-deck').classList.add('on');
+}
+function closeDeckModal() { document.getElementById('modal-deck').classList.remove('on'); }
+async function execDeleteDeck() {
+  const id = S.deleteDeckId; S.deleteDeckId = null; closeDeckModal();
+  if (!id) return;
+  try {
+    await api('DELETE', '/api/decks/' + id);
+    S.allDecks = S.allDecks.filter(d => d.deck_id !== id);
+    renderAll(S.allDecks);
+    await loadHome();
+    toast('Deck deleted.', '');
+  } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+}
+
+// ─── Delete Account Modal ─────────────────────────────────────────────────────
+function openDeleteAccount() {
+  document.getElementById('del-acc-pass').value = '';
+  document.getElementById('del-acc-error').classList.remove('show');
+  document.getElementById('modal-account').classList.add('on');
+}
+function closeAccountModal() { document.getElementById('modal-account').classList.remove('on'); }
+async function execDeleteAccount() {
+  const password = document.getElementById('del-acc-pass').value;
+  const errEl = document.getElementById('del-acc-error');
+  errEl.classList.remove('show');
+  if (!password) { errEl.textContent = 'Please enter your password.'; errEl.classList.add('show'); return; }
+  showLoader('Deleting account…');
+  try {
+    await api('DELETE', '/api/auth/account', { password });
+    hideLoader(); closeAccountModal(); S.user = null;
+    document.getElementById('app-state').classList.remove('on');
+    document.getElementById('auth-state').classList.add('on');
+    swapAuth('login');
+    toast('Your account has been deleted.', '');
+  } catch (e) { hideLoader(); errEl.textContent = e.message; errEl.classList.add('show'); }
+}
+document.getElementById('del-acc-pass').addEventListener('keydown', e => e.key === 'Enter' && execDeleteAccount());
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const [stats, hist] = await Promise.all([api('GET','/api/stats'), api('GET','/api/history')]);
+    document.getElementById('s-decks').textContent    = stats.total_decks;
+    document.getElementById('s-cards').textContent    = stats.total_cards_studied;
+    document.getElementById('s-sessions').textContent = stats.total_sessions;
+    document.getElementById('s-avg').textContent      = stats.average_score;
+    const n = stats.best_streak;
+    document.getElementById('s-streak').textContent = `${n} day${n !== 1 ? 's' : ''} streak`;
+
+    const last7 = hist.slice(-7);
+    const maxV = Math.max(...last7.map(d => d.total), 1);
+    document.getElementById('bar-chart').innerHTML = last7.map(d => {
+      const pct = d.total > 0 ? Math.max((d.total / maxV) * 100, 6) : 0;
+      const cls = d.total === 0 ? 'empty-bar' : '';
+      const day = d.date.replace(/\w+\s/, '');
+      return `<div class="bar-col">
+        <div class="bar-track"><div class="bar-fill ${cls}" style="height:${pct || 3}%"></div></div>
+        <div class="bar-label">${day}</div>
+      </div>`;
+    }).join('');
+  } catch { toast('Could not load stats', 'error'); }
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '<div class="history-empty">Loading…</div>';
+  try {
+    const hist = await api('GET', '/api/history');
+    const active = hist.filter(d => d.total > 0).reverse();
+    if (!active.length) { list.innerHTML = '<div class="history-empty">No study sessions yet. Start studying!</div>'; return; }
+    list.innerHTML = active.map(d => {
+      const pct = Math.round((d.known / d.total) * 100);
+      const col = pct >= 70 ? '#30D158' : pct >= 40 ? '#FF9F0A' : '#FF453A';
+      return `<div class="gc history-item">
+        <div class="history-date">${d.date}</div>
+        <div>
+          <div class="history-total">${d.total} card${d.total !== 1 ? 's' : ''} reviewed</div>
+          <div class="history-sub">${d.known} correct · ${d.learning} still learning</div>
+        </div>
+        <div class="history-pct" style="color:${col}">${pct}%</div>
+      </div>`;
+    }).join('');
+  } catch { list.innerHTML = '<div class="history-empty">Could not load history.</div>'; }
+}
+
+// ─── Study ────────────────────────────────────────────────────────────────────
+async function startStudy(deckId) {
+  showLoader('Loading deck…');
+  try {
+    const deck = await api('GET', '/api/decks/' + deckId);
+    hideLoader();
+    S.deckId = deckId; S.deckName = deck.name; S.cards = deck.cards;
+    beginSession();
+    document.getElementById('app-state').classList.remove('on');
+    document.getElementById('study-mode').classList.add('on');
+  } catch (e) { hideLoader(); toast('Could not load deck: ' + e.message, 'error'); }
+}
+
+function beginSession() {
+  S.shuffled = shuffle(S.cards); S.idx = 0; S.flipped = false; S.know = 0; S.dont = 0;
+  document.getElementById('study-deck-name').textContent = S.deckName;
+  document.getElementById('study-completion').classList.remove('on');
+  document.getElementById('study-card-area').style.display = '';
+  renderCard();
+}
+
+function studyAgain() { document.getElementById('study-completion').classList.remove('on'); beginSession(); }
+
+function exitStudy() {
+  document.getElementById('study-mode').classList.remove('on');
+  document.getElementById('app-state').classList.add('on');
+  showView('decks');
+}
+
+function renderCard() {
+  const c = S.shuffled[S.idx], total = S.shuffled.length;
+  document.getElementById('flip-front').textContent = c.front;
+  document.getElementById('flip-back').textContent  = c.back;
+  document.getElementById('study-counter').textContent = `Card ${S.idx + 1} of ${total}`;
+  document.getElementById('study-progress').style.width = `${(S.idx / total) * 100}%`;
+  document.getElementById('flip-inner').classList.remove('flipped');
+  S.flipped = false;
+  document.getElementById('review-row').style.display = 'none';
+  document.getElementById('flip-hint').style.display  = '';
+}
+
+function flipCard() {
+  if (S.idx >= S.shuffled.length) return;
+  S.flipped = !S.flipped;
+  document.getElementById('flip-inner').classList.toggle('flipped', S.flipped);
+  if (S.flipped) {
+    document.getElementById('review-row').style.display = 'grid';
+    document.getElementById('flip-hint').style.display  = 'none';
+  }
+}
+
+async function submitReview(result) {
+  const card = S.shuffled[S.idx];
+  const realIdx = S.cards.findIndex(c => c.front === card.front && c.back === card.back);
+  try { await api('POST', `/api/decks/${S.deckId}/review`, { card_index: realIdx >= 0 ? realIdx : S.idx, result }); }
+  catch { toast('Could not save review', 'error'); }
+  if (result === 'know') S.know++; else S.dont++;
+  S.idx++;
+  if (S.idx >= S.shuffled.length) showCompletion(); else renderCard();
+}
+
+function showCompletion() {
+  const total = S.shuffled.length;
+  document.getElementById('study-progress').style.width = '100%';
+  document.getElementById('study-counter').textContent = 'Complete';
+  document.getElementById('study-card-area').style.display = 'none';
+  document.getElementById('cs-total').textContent = total;
+  document.getElementById('cs-know').textContent  = S.know;
+  document.getElementById('cs-dont').textContent  = S.dont;
+  const pct = total > 0 ? Math.round((S.know / total) * 100) : 0;
+  let msg;
+  if (pct === 100) msg = "Perfect score! You've mastered this material. 🏆";
+  else if (pct >= 80) msg = "Excellent work! A few more reviews and you'll nail it. 💪";
+  else if (pct >= 50) msg = "Solid progress! Focus on the tricky cards next time. 📈";
+  else                msg = "Every expert was once a beginner. You'll get there! 🌱";
+  document.getElementById('comp-sub').textContent = `${pct}% correct — ${msg}`;
+  document.getElementById('study-completion').classList.add('on');
+}
+
+// ─── Scroll: pill nav shrink ──────────────────────────────────────────────────
+document.getElementById('content-area').addEventListener('scroll', function() {
+  const bar = document.getElementById('top-bar-wrap');
+  if (this.scrollTop > 20) bar.style.padding = '14px 48px 0';
+  else bar.style.padding = '20px 32px 0';
+});
+
+// ─── Keyboard shortcuts (study mode) ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('study-mode').classList.contains('on')) return;
+  const completion = document.getElementById('study-completion').classList.contains('on');
+  if (e.key === 'Escape') { e.preventDefault(); exitStudy(); return; }
+  if (completion) return;
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); return; }
+  if (S.flipped) {
+    if (e.code === 'ArrowLeft'  || e.key === '1') { e.preventDefault(); submitReview('dont_know'); }
+    if (e.code === 'ArrowRight' || e.key === '2') { e.preventDefault(); submitReview('know'); }
+  }
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+checkAuth();
+</script>
+</body>
+</html>
