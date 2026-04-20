@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pdfplumber
+groq
+python-multipart
+python-dotenv
+pymongo
+bcrypt
+itsdangerous
+email-validator
