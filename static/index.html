@@ -784,8 +784,8 @@ html, body {
 // ─── State ────────────────────────────────────────────────────────────────────
 const S = {
   user: null, view: 'home', allDecks: [],
-  deckId: null, deckName: '', cards: [], shuffled: [],
-  idx: 0, flipped: false,
+  deckId: null, deckName: '', cards: [], queue: [],
+  queuePos: 0, flipped: false,
   easy: 0, hard: 0, again: 0,
   deleteDeckId: null,
 };
@@ -1225,8 +1225,10 @@ async function startStudy(deckId) {
 }
 
 function beginSession() {
-  S.shuffled = shuffle(S.cards.map(c => ({...c}))); // fresh copies (no _again flags)
-  S.idx = 0; S.flipped = false;
+  // Preserve _originalIdx so backend always gets the right card index,
+  // even when duplicates exist or the queue grows with _again re-inserts.
+  S.queue = shuffle(S.cards.map((c, i) => ({...c, _originalIdx: i})));
+  S.queuePos = 0; S.flipped = false;
   S.easy = 0; S.hard = 0; S.again = 0;
   document.getElementById('study-deck-name').textContent = S.deckName;
   document.getElementById('study-completion').classList.remove('on');
@@ -1243,13 +1245,14 @@ function exitStudy() {
 }
 
 function renderCard() {
-  const c = S.shuffled[S.idx], total = S.shuffled.length;
+  const c = S.queue[S.queuePos], total = S.queue.length;
   document.getElementById('flip-front').textContent = c.front;
   document.getElementById('flip-back').textContent  = c.back;
-  const againPending = S.shuffled.slice(S.idx).filter(c => c._again).length;
+  // Slice from queuePos+1 so we count only cards AHEAD (not the one being shown)
+  const againPending = S.queue.slice(S.queuePos + 1).filter(c => c._again).length;
   const extra = againPending > 0 ? ` · ${againPending} to review again` : '';
-  document.getElementById('study-counter').textContent = `Card ${S.idx + 1} of ${total}${extra}`;
-  document.getElementById('study-progress').style.width = `${(S.idx / total) * 100}%`;
+  document.getElementById('study-counter').textContent = `Card ${S.queuePos + 1} of ${total}${extra}`;
+  document.getElementById('study-progress').style.width = `${(S.queuePos / total) * 100}%`;
   document.getElementById('flip-inner').classList.remove('flipped');
   S.flipped = false;
   document.getElementById('review-row').style.display = 'none';
@@ -1257,7 +1260,7 @@ function renderCard() {
 }
 
 function flipCard() {
-  if (S.idx >= S.shuffled.length) return;
+  if (S.queuePos >= S.queue.length) return;
   S.flipped = !S.flipped;
   document.getElementById('flip-inner').classList.toggle('flipped', S.flipped);
   if (S.flipped) {
@@ -1267,27 +1270,28 @@ function flipCard() {
 }
 
 async function submitReview(quality) {
-  const card = S.shuffled[S.idx];
-  const realIdx = S.cards.findIndex(c => c.front === card.front && c.back === card.back);
-  try { await api('POST', `/api/decks/${S.deckId}/review`, { card_index: realIdx >= 0 ? realIdx : S.idx, quality }); }
+  const card = S.queue[S.queuePos];
+  // Use _originalIdx (set during beginSession) — safe even with duplicate front/back text
+  try { await api('POST', `/api/decks/${S.deckId}/review`, { card_index: card._originalIdx, quality }); }
   catch { toast('Could not save review', 'error'); }
 
   if (quality === 0) {
     S.again++;
-    // Re-insert card 3-7 positions ahead in remaining queue
-    const remaining = S.shuffled.length - (S.idx + 1);
-    const maxOff = Math.min(7, remaining);
+    // Re-insert this card 3-7 positions ahead in the remaining queue
+    const remaining = S.queue.length - (S.queuePos + 1);
     const minOff = Math.min(3, remaining);
+    const maxOff = Math.min(7, remaining);
     const offset = minOff + Math.floor(Math.random() * Math.max(1, maxOff - minOff + 1));
-    S.shuffled.splice(S.idx + 1 + offset, 0, Object.assign({}, card, { _again: true }));
+    // _originalIdx is carried through so the backend call stays correct on re-review
+    S.queue.splice(S.queuePos + 1 + offset, 0, Object.assign({}, card, { _again: true }));
   } else if (quality === 2) {
     S.hard++;
   } else {
     S.easy++;
   }
 
-  S.idx++;
-  if (S.idx >= S.shuffled.length) showCompletion(); else renderCard();
+  S.queuePos++;
+  if (S.queuePos >= S.queue.length) showCompletion(); else renderCard();
 }
 
 function showCompletion() {

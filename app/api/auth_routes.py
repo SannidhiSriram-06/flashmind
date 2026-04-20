@@ -46,6 +46,7 @@ def _delete_session(response: Response) -> None:
     """Delete the session cookie with the same attributes used when setting it."""
     response.delete_cookie(
         "session",
+        path="/",
         httponly=True,
         samesite="lax",
         secure=os.environ.get("ENV") == "production",

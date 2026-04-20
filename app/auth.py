@@ -46,7 +46,7 @@ def verify_session_token(token: str) -> str | None:
     try:
         user_id_bytes = _get_signer().unsign(token, max_age=_MAX_AGE)
         return user_id_bytes.decode("utf-8")
-    except (SignatureExpired, BadSignature, Exception):
+    except (SignatureExpired, BadSignature):
         return None
 
 

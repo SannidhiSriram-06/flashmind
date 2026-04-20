@@ -3,6 +3,70 @@
 Reviewed on: 2026-04-20  
 Scope: all files currently in repository (source, frontend, infra, tests, docs, and Obsidian metadata)
 
+## QA Review — Senior Engineer Notes for Intern
+
+### STUDY FLOW CRITICAL ISSUES
+
+1. **In static/index.html, the "Again" button logic is BROKEN** - In the `submitReview()` function (lines 1275-1282), when quality === 0, the card gets re-inserted with `_again: true` flag, BUT this flag is never used to filter or display the card again in the same session. The card disappears forever after clicking "Again".
+   - **Fix**: In `renderCard()` function (lines 1249-1250), the `againPending` logic correctly counts cards with `_again` flag, but the main study loop in `submitReview()` only increments `S.idx` and doesn't check for `_again` cards. Add this logic after `S.idx++`:
+   ```javascript
+   // Skip over already-reviewed cards, stop at _again cards
+   while (S.idx < S.shuffled.length && !S.shuffled[S.idx]._again && S.shuffled[S.idx]._reviewed) {
+     S.idx++;
+   }
+   // Mark current card as reviewed
+   if (S.idx > 0) S.shuffled[S.idx - 1]._reviewed = true;
+   ```
+
+2. **Backend-Frontend data mismatch** - Backend `/api/decks/{deck_id}/review` expects `quality: 0|2|5` (lines 205, 210, 215 in decks.py) but frontend sends these correctly. However, the backend stores `card_index` but frontend calculates `realIdx` by matching front+back content which is fragile for duplicate cards.
+   - **Fix**: In `static/index.html` line 1228, preserve original index: `S.shuffled = shuffle(S.cards.map((c, i) => ({...c, _originalIdx: i})));` Then in `submitReview()` line 1271, use: `const realIdx = card._originalIdx;`
+
+3. **Progress counter lies about "Again" cards** - The counter shows "X to review again" but these cards never actually appear again in the current session due to issue #1.
+   - **Fix**: Same as #1 - the `_again` cards need to be properly looped back into the study flow.
+
+### BACKEND CONSISTENCY ISSUES
+
+4. **Missing user_id filter in deck review update** - In `app/api/decks.py` line 223-226, the `update_one` only filters by `deck_id` but not `user_id`. This is a security risk.
+   - **Fix**: Change line 224 to: `{"deck_id": deck_id, "user_id": user["user_id"]}`
+
+5. **Performance issue in due count calculation** - `_due_count()` function (lines 67-76) iterates through ALL cards for every deck listing. This is O(n) per deck and will slow down with large decks.
+   - **Fix**: Add a MongoDB aggregation pipeline or cache due_count in the deck document, updating it on each review.
+
+### UI/UX FLOW ISSUES
+
+6. **Upload CTA is implemented but could be better** - Line 1109 shows "Study now →" button which is good, but it appears in a toast that disappears.
+   - **Fix**: Make the toast persistent or add a modal: "Deck created! [Study Now] [View Decks]"
+
+7. **Search empty state works correctly** - Lines 1075-1077 properly show "No matching decks" - this is actually working fine.
+
+8. **Delete button is properly disabled during deletion** - Lines 1126-1129 correctly disable and show spinner - this is working fine.
+
+### MOBILE RESPONSIVENESS ISSUES
+
+9. **Sidebar responsiveness is implemented correctly** - Lines 472-489 show proper hamburger menu and sidebar transform - this is working fine.
+
+10. **Study card height is FIXED, not responsive** - Line 354 sets `height: 300px` which can overflow on small devices.
+    - **Fix**: Change to: `height: min(300px, 60vh); min-height: 250px;`
+
+11. **Stats grid needs mobile optimization** - No responsive breakpoint for stats grid on mobile.
+    - **Fix**: Add to mobile section (line 472): `.stats-grid { grid-template-columns: 1fr; gap: 12px; }`
+
+### CRITICAL BUGS FOUND
+
+12. **Particle animation runs continuously** - Lines 716-754 show particle animation without visibility check, draining battery.
+    - **Fix**: Add at line 716: `let animationId; function animateParticles() { if (document.hidden) return; animationId = requestAnimationFrame(animateParticles); }` And add: `document.addEventListener('visibilitychange', () => { if (document.hidden) cancelAnimationFrame(animationId); else animateParticles(); });`
+
+13. **RealIdx calculation will fail with duplicate cards** - Line 1271 uses `findIndex` with front+back matching, which returns first match for duplicates.
+    - **Fix**: As mentioned in #2, use `_originalIdx` preserved during shuffle.
+
+### MINOR ISSUES
+
+14. **Loader cleanup issue** - Lines 824-825 and 837-838 hide loader in success/error but not in finally block.
+    - **Fix**: Wrap in try/catch/finally: `try { ... } catch { ... } finally { hideLoader(); }`
+
+15. **Upload progress is fake** - Lines 1101-1103 show timer-based "progress", not actual progress.
+    - **Fix**: Change wording to "Processing PDF..." without step indicators, or implement server-sent events for real progress.
+
 ## Security Vulnerabilities
 
 | Severity | File + line | Issue | Exact fix |

@@ -209,12 +209,12 @@ def review_card(deck_id: str, body: ReviewBody, request: Request):
         next_date = date.today() + timedelta(days=1)
     elif body.quality == 2:  # Hard — got it but struggled
         state["repetitions"] += 1
-        state["interval"] = max(1, round(state["interval"] * 0.8, 2))
+        state["interval"] = max(1, round(state["interval"] * state["ease"] * 0.8, 2))
         state["ease"] = max(1.3, round(state["ease"] - 0.15, 2))
         next_date = date.today() + timedelta(days=max(1, int(state["interval"])))
     else:  # quality == 5, Easy — knew it cold
         state["repetitions"] += 1
-        state["interval"] = round(state["interval"] * state["ease"], 2)
+        state["interval"] = max(1, round(state["interval"] * state["ease"], 2))
         state["ease"] = min(3.0, round(state["ease"] + 0.1, 2))
         next_date = date.today() + timedelta(days=max(1, int(state["interval"])))
 
