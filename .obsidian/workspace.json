@@ -185,6 +185,10 @@
   },
   "active": "96fad86b8d8f6a97",
   "lastOpenFiles": [
+    "Brain/Issues_found_by_Windsurf.txt",
+    "Brain/Issues_found_by_Cursor.txt",
+    "Brain/cursor-review.md",
+    "requirements-dev.txt",
     "nixpacks.toml",
     "requirements-prod.txt",
     "Brain/Welcome.md",
@@ -195,9 +199,6 @@
     "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751/data_level0.bin",
     "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751",
     "uploads/29b11f3a-169f-47de-b14e-f250dc887bdb.pdf",
-    "runtime.txt",
-    "render.yaml",
-    "Procfile",
     "venv/lib/python3.13/site-packages/pip-26.0.1.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md",
     "venv/lib/python3.13/site-packages/pip/_vendor/idna/LICENSE.md",
     "venv/lib/python3.13/site-packages/~ip-25.2.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md"

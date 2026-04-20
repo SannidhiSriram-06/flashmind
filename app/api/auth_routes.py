@@ -42,6 +42,16 @@ def _set_session(response: Response, user_id: str) -> str:
     return token
 
 
+def _delete_session(response: Response) -> None:
+    """Delete the session cookie with the same attributes used when setting it."""
+    response.delete_cookie(
+        "session",
+        httponly=True,
+        samesite="lax",
+        secure=os.environ.get("ENV") == "production",
+    )
+
+
 def _safe_user(doc: dict) -> dict:
     return {k: v for k, v in doc.items() if k not in ("_id", "password_hash")}
 
@@ -115,7 +125,7 @@ def login(body: LoginBody, response: Response):
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("session")
+    _delete_session(response)
     return {"ok": True}
 
 
@@ -167,6 +177,8 @@ def change_password(body: PasswordBody, request: Request):
 
     db = get_db()
     full_user = db.users.find_one({"user_id": user["user_id"]})
+    if not full_user:
+        raise HTTPException(status_code=404, detail="User not found")
     if not verify_password(body.current_password, full_user["password_hash"]):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     if len(body.new_password) < 8:
@@ -193,6 +205,8 @@ def delete_account(body: DeleteAccountBody, request: Request, response: Response
 
     db = get_db()
     full_user = db.users.find_one({"user_id": user["user_id"]})
+    if not full_user:
+        raise HTTPException(status_code=404, detail="User not found")
     if not verify_password(body.password, full_user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect password")
 
@@ -205,5 +219,5 @@ def delete_account(body: DeleteAccountBody, request: Request, response: Response
     db.study_sessions.delete_many({"user_id": user["user_id"]})
     db.users.delete_one({"user_id": user["user_id"]})
 
-    response.delete_cookie("session")
+    _delete_session(response)
     return {"ok": True}

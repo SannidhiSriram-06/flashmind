@@ -88,6 +88,13 @@ html, body {
 @keyframes fadeOut { to { opacity:0; transform:translateY(12px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Reduced-motion overrides ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  #particle-canvas { display: none; }
+  .deck-card { opacity: 1 !important; animation: none !important; }
+}
+
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
 .inp {
   width: 100%; padding: 12px 16px;
@@ -152,6 +159,20 @@ html, body {
 ═══════════════════════════════════════════════════════════════════════════ */
 #app-state { display: none; height: 100vh; }
 #app-state.on { display: flex; }
+
+/* ── Hamburger (mobile only) ─────────────────────────────────────────────── */
+#hamburger-btn {
+  display: none; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; border-radius: 8px;
+  background: var(--panel-bg); border: 1px solid var(--panel-border);
+  cursor: pointer; font-size: 18px; color: var(--text-color);
+  flex-shrink: 0;
+}
+#sidebar-overlay {
+  display: none; position: fixed; inset: 0; z-index: 99;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+}
+#sidebar-overlay.on { display: block; }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
 #sidebar {
@@ -257,6 +278,7 @@ html, body {
 .deck-card-name { font-size: 15px; font-weight: 700; flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .deck-card-del { background: none; border: none; color: var(--accent-gray); cursor: pointer; font-size: 13px; padding: 3px 7px; border-radius: 6px; transition: all 0.15s; line-height: 1; flex-shrink: 0; }
 .deck-card-del:hover { color: #FF453A; background: rgba(255,69,58,0.1); }
+.deck-card-del:disabled { opacity: 0.5; cursor: not-allowed; }
 .deck-card-meta { font-size: 12px; color: var(--accent-gray); margin-bottom: 10px; }
 .due-badge {
   display: inline-block; font-size: 11px; font-weight: 600;
@@ -348,16 +370,20 @@ html, body {
 .flip-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-gray); margin-bottom: 16px; }
 .flip-text  { font-size: 1.15rem; font-weight: 600; line-height: 1.55; color: var(--text-color); }
 .flip-hint  { font-size: 13px; color: var(--accent-gray); }
-.review-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
-.review-btn { padding: 14px; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font-main); transition: all 0.2s; }
+
+/* 3-button SM-2 review row */
+.review-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; }
+.review-btn { padding: 13px 10px; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-main); transition: all 0.2s; }
 .review-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.review-btn-sub { font-size: 11px; font-weight: 400; opacity: 0.8; display: block; margin-top: 3px; }
+
 .study-completion { display: none; text-align: center; width: 100%; }
 .study-completion.on { display: block; }
 .comp-emoji { font-size: 3.5rem; margin-bottom: 16px; }
 .comp-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
 .comp-sub   { font-size: 14px; color: var(--accent-gray); margin-bottom: 28px; }
 .comp-stats { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
-.comp-stat  { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 18px 22px; min-width: 100px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.comp-stat  { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 18px 22px; min-width: 90px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .comp-stat-num { font-size: 2rem; font-weight: 700; line-height: 1; }
 .comp-stat-lbl { font-size: 12px; color: var(--accent-gray); margin-top: 4px; }
 .comp-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -395,16 +421,23 @@ html, body {
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast-container { position: fixed; bottom: 80px; right: 24px; z-index: 950; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
 .toast {
-  max-width: 320px; padding: 14px 18px; border-radius: 12px;
+  max-width: 340px; padding: 14px 18px; border-radius: 12px;
   background: var(--panel-bg); border: 1px solid var(--panel-border);
   backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   font-size: 13px; font-weight: 500; color: var(--text-color);
   animation: slideUp 0.3s ease forwards;
+  display: flex; align-items: center; gap: 10px;
 }
 .toast.success { border-left: 3px solid #30D158; }
 .toast.error   { border-left: 3px solid #FF453A; }
 .toast.dismiss { animation: fadeOut 0.3s ease forwards; }
+.toast-action {
+  flex-shrink: 0; padding: 4px 10px; border-radius: 6px;
+  background: #2997ff; color: #fff; border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-main);
+}
+.toast-action:hover { background: #0077ed; }
 
 /* ── Floating buttons ────────────────────────────────────────────────────── */
 .float-btn {
@@ -432,13 +465,67 @@ html, body {
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE  ≤ 768px
+═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Sidebar becomes an off-canvas drawer */
+  #sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: none;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0,0,0,0.3);
+  }
+
+  /* Main content fills full width */
+  #main-content { margin-left: 0; }
+
+  /* Hamburger visible */
+  #hamburger-btn { display: flex; }
+
+  /* Top bar padding */
+  #top-bar-wrap { padding: 14px 16px 0; }
+  #content-area { padding: 20px 16px 80px; }
+
+  /* Deck grid single column */
+  .decks-grid { grid-template-columns: 1fr; }
+
+  /* Stats grid single column */
+  .stats-grid { grid-template-columns: 1fr; }
+
+  /* Study mode adjustments */
+  .study-topbar { padding: 14px 16px; }
+  .study-body { padding: 20px 16px; gap: 16px; }
+  .flip-scene { height: auto; max-height: 60vh; min-height: 200px; }
+  .review-btn { padding: 10px 6px; font-size: 13px; }
+
+  /* Greeting smaller */
+  .greeting { font-size: 22px; margin-bottom: 20px; }
+
+  /* Upload card smaller */
+  .upload-card { padding: 32px 20px; }
+
+  /* Hide floating stack in study mode on mobile */
+  #study-mode.on ~ #floating-stack { display: none; }
+
+  /* Completion stats wrap nicely */
+  .comp-stats { gap: 8px; }
+  .comp-stat { padding: 14px 16px; min-width: 80px; }
+
+  /* History item */
+  .history-item { grid-template-columns: 54px 1fr auto; gap: 10px; padding: 14px 16px; }
+}
 </style>
 </head>
 <body>
 
 <canvas id="particle-canvas"></canvas>
 
-<!-- ═══════════════════════════════════════════════════ AUTH STATE ════════ -->
+<!-- ═══════════════════════════════════════════════ AUTH STATE ════════ -->
 <div id="auth-state">
   <!-- Login -->
   <div id="login-card" class="gc auth-card animate-scale-in">
@@ -464,6 +551,9 @@ html, body {
   </div>
 </div>
 
+<!-- Sidebar overlay (mobile) -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <!-- ════════════════════════════════════════════════ APP STATE ═══════════ -->
 <div id="app-state">
 
@@ -471,10 +561,10 @@ html, body {
   <aside id="sidebar" class="gc">
     <div class="sb-logo"><span>⚡</span><span class="grad-text">FlashMind</span></div>
     <nav class="sb-nav">
-      <button class="nav-item active" data-v="home"    onclick="showView('home')"   ><span class="nav-icon">🏠</span> Home</button>
-      <button class="nav-item"        data-v="decks"   onclick="showView('decks')"  ><span class="nav-icon">📚</span> My Decks</button>
-      <button class="nav-item"        data-v="stats"   onclick="showView('stats')"  ><span class="nav-icon">📊</span> Stats</button>
-      <button class="nav-item"        data-v="history" onclick="showView('history')"><span class="nav-icon">🕐</span> History</button>
+      <button class="nav-item active" data-v="home"    onclick="showView('home');closeSidebar()"   ><span class="nav-icon">🏠</span> Home</button>
+      <button class="nav-item"        data-v="decks"   onclick="showView('decks');closeSidebar()"  ><span class="nav-icon">📚</span> My Decks</button>
+      <button class="nav-item"        data-v="stats"   onclick="showView('stats');closeSidebar()"  ><span class="nav-icon">📊</span> Stats</button>
+      <button class="nav-item"        data-v="history" onclick="showView('history');closeSidebar()"><span class="nav-icon">🕐</span> History</button>
     </nav>
     <div class="sb-bottom">
       <div class="sb-user">
@@ -495,6 +585,7 @@ html, body {
   <div id="main-content">
     <div id="top-bar-wrap">
       <div id="top-bar">
+        <button id="hamburger-btn" aria-label="Open menu" onclick="openSidebar()">☰</button>
         <div id="top-bar-title" style="font-size:15px;font-weight:600;font-family:var(--font-display)">Home</div>
         <div style="width:1px"></div>
       </div>
@@ -550,9 +641,9 @@ html, body {
             <div class="stat-value grad-text" id="s-sessions">—</div>
           </div>
           <div class="gc stat-card">
-            <div class="stat-label">Average Score</div>
+            <div class="stat-label">Easy Rate</div>
             <div class="stat-value grad-text" id="s-avg">—</div>
-            <div class="stat-unit">% correct</div>
+            <div class="stat-unit">% easy</div>
           </div>
         </div>
         <div class="gc streak-card">
@@ -602,10 +693,17 @@ html, body {
           </div>
         </div>
       </div>
-      <div class="flip-hint" id="flip-hint">Click card to reveal answer</div>
+      <div class="flip-hint" id="flip-hint">Click card or press Space to reveal</div>
       <div class="review-row" id="review-row" style="display:none">
-        <button class="review-btn" style="background:#FF9F0A;color:#fff" onclick="submitReview('dont_know')">Still learning ↺</button>
-        <button class="review-btn" style="background:#30D158;color:#fff" onclick="submitReview('know')">Got it ✓</button>
+        <button class="review-btn" style="background:#FF453A;color:#fff" onclick="submitReview(0)">
+          😓 Again<span class="review-btn-sub">Forgot it</span>
+        </button>
+        <button class="review-btn" style="background:#FF9F0A;color:#fff" onclick="submitReview(2)">
+          🤔 Hard<span class="review-btn-sub">Struggled</span>
+        </button>
+        <button class="review-btn" style="background:#30D158;color:#fff" onclick="submitReview(5)">
+          ✅ Easy<span class="review-btn-sub">Got it cold</span>
+        </button>
       </div>
     </div>
 
@@ -614,9 +712,9 @@ html, body {
       <div class="comp-title grad-text">Deck Complete!</div>
       <div class="comp-sub" id="comp-sub"></div>
       <div class="comp-stats">
-        <div class="comp-stat"><div class="comp-stat-num" id="cs-total" style="color:var(--text-color)">0</div><div class="comp-stat-lbl">Total</div></div>
-        <div class="comp-stat"><div class="comp-stat-num" id="cs-know"  style="color:#30D158">0</div><div class="comp-stat-lbl">Got it</div></div>
-        <div class="comp-stat"><div class="comp-stat-num" id="cs-dont"  style="color:#FF9F0A">0</div><div class="comp-stat-lbl">Still learning</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-easy"  style="color:#30D158">0</div><div class="comp-stat-lbl">Easy</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-hard"  style="color:#FF9F0A">0</div><div class="comp-stat-lbl">Hard</div></div>
+        <div class="comp-stat"><div class="comp-stat-num" id="cs-again" style="color:#FF453A">0</div><div class="comp-stat-lbl">Again</div></div>
       </div>
       <div class="comp-btns">
         <button class="btn btn-blue btn-lg" style="padding:13px 28px;font-size:15px" onclick="studyAgain()">Study Again ↺</button>
@@ -676,7 +774,7 @@ html, body {
     <div class="float-tooltip">Toggle theme</div>
   </div>
   <div class="float-btn-wrap">
-    <button class="float-btn" onclick="window.open('https://forms.gle/ffDUmGgiuVkZ7X8S9','_blank')">🐛</button>
+    <button class="float-btn" onclick="window.open('https://forms.gle/ffDUmGgiuVkZ7X8S9','_blank','noopener,noreferrer')">🐛</button>
     <div class="float-tooltip">Report an issue</div>
   </div>
 </div>
@@ -687,7 +785,8 @@ html, body {
 const S = {
   user: null, view: 'home', allDecks: [],
   deckId: null, deckName: '', cards: [], shuffled: [],
-  idx: 0, flipped: false, know: 0, dont: 0,
+  idx: 0, flipped: false,
+  easy: 0, hard: 0, again: 0,
   deleteDeckId: null,
 };
 
@@ -712,11 +811,24 @@ function toggleTheme() {
 }
 initTheme();
 
+// ─── Mobile sidebar ───────────────────────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('on');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('on');
+}
+
 // ─── Particles ────────────────────────────────────────────────────────────────
 (function initParticles() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
   const canvas = document.getElementById('particle-canvas');
   const ctx = canvas.getContext('2d');
   let W, H, particles = [], mouse = { x: -999, y: -999 };
+  let animId = null, paused = false;
 
   function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
   resize();
@@ -734,6 +846,7 @@ initTheme();
   }
 
   function draw() {
+    if (paused) return;
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     particles.forEach(p => {
@@ -748,8 +861,14 @@ initTheme();
       if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
     });
-    requestAnimationFrame(draw);
+    animId = requestAnimationFrame(draw);
   }
+
+  document.addEventListener('visibilitychange', () => {
+    paused = document.hidden;
+    if (!paused) { animId = requestAnimationFrame(draw); }
+  });
+
   draw();
 })();
 
@@ -771,12 +890,22 @@ async function api(method, path, body) {
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
-function toast(msg, type = '') {
+function toast(msg, type = '', actionLabel, actionFn) {
   const el = document.createElement('div');
   el.className = 'toast' + (type ? ' ' + type : '');
-  el.textContent = msg;
+  const span = document.createElement('span');
+  span.textContent = msg;
+  el.appendChild(span);
+  if (actionLabel && actionFn) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = actionLabel;
+    btn.onclick = () => { el.remove(); actionFn(); };
+    el.appendChild(btn);
+  }
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => { el.classList.add('dismiss'); setTimeout(() => el.remove(), 300); }, 4000);
+  const dur = actionLabel ? 6000 : 4000;
+  setTimeout(() => { el.classList.add('dismiss'); setTimeout(() => el.remove(), 300); }, dur);
 }
 
 // ─── Loader ───────────────────────────────────────────────────────────────────
@@ -879,6 +1008,7 @@ function shuffle(a) {
 
 // ─── 3D Tilt ──────────────────────────────────────────────────────────────────
 function applyTilt(el) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   el.addEventListener('mousemove', e => {
     const r = el.getBoundingClientRect();
     const x = e.clientX - r.left, y = e.clientY - r.top;
@@ -899,7 +1029,7 @@ function deckHTML(d, showDel = true) {
     ? `<span class="due-badge has">Due today: ${d.due_count}</span>`
     : `<span class="due-badge clear">All caught up ✓</span>`;
   const del = showDel
-    ? `<button class="deck-card-del" onclick="openDeckModal('${esc(d.deck_id)}','${esc(d.name)}')" title="Delete">✕</button>`
+    ? `<button class="deck-card-del" data-deck-id="${esc(d.deck_id)}" onclick="openDeckModal('${esc(d.deck_id)}','${esc(d.name)}')" title="Delete">✕</button>`
     : '';
   return `
     <div class="gc deck-card">
@@ -941,6 +1071,11 @@ async function loadAllDecks() {
 
 function renderAll(decks) {
   const grid = document.getElementById('all-decks-grid');
+  const q = document.getElementById('deck-search').value.trim();
+  if (decks.length === 0 && q) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">🔍</span><div class="empty-state-title">No matching decks</div><div class="empty-state-sub">Try a different search term</div></div>`;
+    return;
+  }
   grid.innerHTML = decks.length
     ? decks.map(d => deckHTML(d, true)).join('')
     : `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">📭</span><div class="empty-state-title">No decks yet</div><div class="empty-state-sub">Upload a PDF to create your first deck</div></div>`;
@@ -970,7 +1105,8 @@ async function handleFile(file) {
     const fd = new FormData(); fd.append('file', file);
     const res = await api('POST', '/api/upload', fd);
     clearInterval(tick); hideLoader();
-    toast(`✓ "${res.name}" — ${res.card_count} cards ready`, 'success');
+    const deckId = res.deck_id;
+    toast(`✓ "${res.name}" — ${res.card_count} cards ready`, 'success', 'Study now →', () => startStudy(deckId));
     await loadHome();
   } catch (e) { clearInterval(tick); hideLoader(); toast('Upload failed: ' + e.message, 'error'); }
 }
@@ -985,13 +1121,22 @@ function closeDeckModal() { document.getElementById('modal-deck').classList.remo
 async function execDeleteDeck() {
   const id = S.deleteDeckId; S.deleteDeckId = null; closeDeckModal();
   if (!id) return;
+  // Show loading spinner on the delete button for this card
+  const delBtn = document.querySelector(`.deck-card-del[data-deck-id="${id}"]`);
+  if (delBtn) {
+    delBtn.disabled = true;
+    delBtn.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle"></span>';
+  }
   try {
     await api('DELETE', '/api/decks/' + id);
     S.allDecks = S.allDecks.filter(d => d.deck_id !== id);
     renderAll(S.allDecks);
     await loadHome();
     toast('Deck deleted.', '');
-  } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+  } catch (e) {
+    if (delBtn) { delBtn.disabled = false; delBtn.textContent = '✕'; }
+    toast('Delete failed: ' + e.message, 'error');
+  }
 }
 
 // ─── Delete Account Modal ─────────────────────────────────────────────────────
@@ -1052,13 +1197,13 @@ async function loadHistory() {
     const active = hist.filter(d => d.total > 0).reverse();
     if (!active.length) { list.innerHTML = '<div class="history-empty">No study sessions yet. Start studying!</div>'; return; }
     list.innerHTML = active.map(d => {
-      const pct = Math.round((d.known / d.total) * 100);
+      const pct = Math.round((d.easy / d.total) * 100);
       const col = pct >= 70 ? '#30D158' : pct >= 40 ? '#FF9F0A' : '#FF453A';
       return `<div class="gc history-item">
         <div class="history-date">${d.date}</div>
         <div>
           <div class="history-total">${d.total} card${d.total !== 1 ? 's' : ''} reviewed</div>
-          <div class="history-sub">${d.known} correct · ${d.learning} still learning</div>
+          <div class="history-sub">${d.easy} easy · ${d.hard} hard · ${d.again} again</div>
         </div>
         <div class="history-pct" style="color:${col}">${pct}%</div>
       </div>`;
@@ -1080,7 +1225,9 @@ async function startStudy(deckId) {
 }
 
 function beginSession() {
-  S.shuffled = shuffle(S.cards); S.idx = 0; S.flipped = false; S.know = 0; S.dont = 0;
+  S.shuffled = shuffle(S.cards.map(c => ({...c}))); // fresh copies (no _again flags)
+  S.idx = 0; S.flipped = false;
+  S.easy = 0; S.hard = 0; S.again = 0;
   document.getElementById('study-deck-name').textContent = S.deckName;
   document.getElementById('study-completion').classList.remove('on');
   document.getElementById('study-card-area').style.display = '';
@@ -1099,7 +1246,9 @@ function renderCard() {
   const c = S.shuffled[S.idx], total = S.shuffled.length;
   document.getElementById('flip-front').textContent = c.front;
   document.getElementById('flip-back').textContent  = c.back;
-  document.getElementById('study-counter').textContent = `Card ${S.idx + 1} of ${total}`;
+  const againPending = S.shuffled.slice(S.idx).filter(c => c._again).length;
+  const extra = againPending > 0 ? ` · ${againPending} to review again` : '';
+  document.getElementById('study-counter').textContent = `Card ${S.idx + 1} of ${total}${extra}`;
   document.getElementById('study-progress').style.width = `${(S.idx / total) * 100}%`;
   document.getElementById('flip-inner').classList.remove('flipped');
   S.flipped = false;
@@ -1117,31 +1266,45 @@ function flipCard() {
   }
 }
 
-async function submitReview(result) {
+async function submitReview(quality) {
   const card = S.shuffled[S.idx];
   const realIdx = S.cards.findIndex(c => c.front === card.front && c.back === card.back);
-  try { await api('POST', `/api/decks/${S.deckId}/review`, { card_index: realIdx >= 0 ? realIdx : S.idx, result }); }
+  try { await api('POST', `/api/decks/${S.deckId}/review`, { card_index: realIdx >= 0 ? realIdx : S.idx, quality }); }
   catch { toast('Could not save review', 'error'); }
-  if (result === 'know') S.know++; else S.dont++;
+
+  if (quality === 0) {
+    S.again++;
+    // Re-insert card 3-7 positions ahead in remaining queue
+    const remaining = S.shuffled.length - (S.idx + 1);
+    const maxOff = Math.min(7, remaining);
+    const minOff = Math.min(3, remaining);
+    const offset = minOff + Math.floor(Math.random() * Math.max(1, maxOff - minOff + 1));
+    S.shuffled.splice(S.idx + 1 + offset, 0, Object.assign({}, card, { _again: true }));
+  } else if (quality === 2) {
+    S.hard++;
+  } else {
+    S.easy++;
+  }
+
   S.idx++;
   if (S.idx >= S.shuffled.length) showCompletion(); else renderCard();
 }
 
 function showCompletion() {
-  const total = S.shuffled.length;
+  const total = S.easy + S.hard + S.again;
   document.getElementById('study-progress').style.width = '100%';
   document.getElementById('study-counter').textContent = 'Complete';
   document.getElementById('study-card-area').style.display = 'none';
-  document.getElementById('cs-total').textContent = total;
-  document.getElementById('cs-know').textContent  = S.know;
-  document.getElementById('cs-dont').textContent  = S.dont;
-  const pct = total > 0 ? Math.round((S.know / total) * 100) : 0;
+  document.getElementById('cs-easy').textContent  = S.easy;
+  document.getElementById('cs-hard').textContent  = S.hard;
+  document.getElementById('cs-again').textContent = S.again;
+  const pct = total > 0 ? Math.round((S.easy / total) * 100) : 0;
   let msg;
   if (pct === 100) msg = "Perfect score! You've mastered this material. 🏆";
   else if (pct >= 80) msg = "Excellent work! A few more reviews and you'll nail it. 💪";
   else if (pct >= 50) msg = "Solid progress! Focus on the tricky cards next time. 📈";
   else                msg = "Every expert was once a beginner. You'll get there! 🌱";
-  document.getElementById('comp-sub').textContent = `${pct}% correct — ${msg}`;
+  document.getElementById('comp-sub').textContent = `${pct}% easy — ${msg}`;
   document.getElementById('study-completion').classList.add('on');
 }
 
@@ -1160,8 +1323,9 @@ document.addEventListener('keydown', e => {
   if (completion) return;
   if (e.code === 'Space') { e.preventDefault(); flipCard(); return; }
   if (S.flipped) {
-    if (e.code === 'ArrowLeft'  || e.key === '1') { e.preventDefault(); submitReview('dont_know'); }
-    if (e.code === 'ArrowRight' || e.key === '2') { e.preventDefault(); submitReview('know'); }
+    if (e.key === '1') { e.preventDefault(); submitReview(0); }      // Again
+    if (e.key === '2') { e.preventDefault(); submitReview(2); }      // Hard
+    if (e.key === '3' || e.code === 'ArrowRight') { e.preventDefault(); submitReview(5); } // Easy
   }
 });
 

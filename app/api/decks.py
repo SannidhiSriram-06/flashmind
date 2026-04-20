@@ -170,8 +170,8 @@ def delete_deck(deck_id: str, request: Request):
     user = _require_user(request)
     _load_deck(deck_id, user["user_id"])  # 404 / 403 guard
 
-    get_db().decks.delete_one({"deck_id": deck_id})
-    get_db().study_sessions.delete_many({"deck_id": deck_id})
+    get_db().decks.delete_one({"deck_id": deck_id, "user_id": user["user_id"]})
+    get_db().study_sessions.delete_many({"deck_id": deck_id, "user_id": user["user_id"]})
     delete_collection(deck_id)
     return {"deleted": deck_id}
 
@@ -180,7 +180,7 @@ def delete_deck(deck_id: str, request: Request):
 
 class ReviewBody(BaseModel):
     card_index: int
-    result: str  # "know" | "dont_know"
+    quality: int  # 0 = Again, 2 = Hard, 5 = Easy
 
 
 @router.post("/decks/{deck_id}/review")
@@ -191,8 +191,8 @@ def review_card(deck_id: str, body: ReviewBody, request: Request):
 
     if body.card_index < 0 or body.card_index >= len(deck["cards"]):
         raise HTTPException(status_code=400, detail="card_index out of range")
-    if body.result not in ("know", "dont_know"):
-        raise HTTPException(status_code=400, detail="result must be 'know' or 'dont_know'")
+    if body.quality not in (0, 2, 5):
+        raise HTTPException(status_code=400, detail="quality must be 0 (Again), 2 (Hard), or 5 (Easy)")
 
     key = str(body.card_index)
     state = deck["card_states"].get(key, {
@@ -202,31 +202,35 @@ def review_card(deck_id: str, body: ReviewBody, request: Request):
         "next_review": date.today().isoformat(),
     })
 
-    if body.result == "know":
-        state["repetitions"] += 1
-        state["interval"] = round(state["interval"] * state["ease"], 2)
-        state["ease"] = min(3.0, round(state["ease"] + 0.1, 2))
-        next_date = date.today() + timedelta(days=max(1, int(state["interval"])))
-    else:
+    if body.quality == 0:  # Again — complete blank, reset
         state["repetitions"] = 0
         state["interval"] = 1
         state["ease"] = max(1.3, round(state["ease"] - 0.2, 2))
         next_date = date.today() + timedelta(days=1)
+    elif body.quality == 2:  # Hard — got it but struggled
+        state["repetitions"] += 1
+        state["interval"] = max(1, round(state["interval"] * 0.8, 2))
+        state["ease"] = max(1.3, round(state["ease"] - 0.15, 2))
+        next_date = date.today() + timedelta(days=max(1, int(state["interval"])))
+    else:  # quality == 5, Easy — knew it cold
+        state["repetitions"] += 1
+        state["interval"] = round(state["interval"] * state["ease"], 2)
+        state["ease"] = min(3.0, round(state["ease"] + 0.1, 2))
+        next_date = date.today() + timedelta(days=max(1, int(state["interval"])))
 
     state["next_review"] = next_date.isoformat()
 
     db.decks.update_one(
-        {"deck_id": deck_id},
+        {"deck_id": deck_id, "user_id": user["user_id"]},
         {"$set": {f"card_states.{key}": state}},
     )
 
-    # Write to study_sessions
     db.study_sessions.insert_one({
         "user_id": user["user_id"],
         "deck_id": deck_id,
         "deck_name": deck["name"],
         "card_index": body.card_index,
-        "result": body.result,
+        "quality": body.quality,
         "timestamp": datetime.utcnow().isoformat(),
         "date": date.today().isoformat(),
     })

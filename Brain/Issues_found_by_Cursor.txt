@@ -1,0 +1,82 @@
+# FlashMind Comprehensive Code Review
+
+Reviewed on: 2026-04-20  
+Scope: all files currently in repository (source, frontend, infra, tests, docs, and Obsidian metadata)
+
+## Security Vulnerabilities
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| High | `app/api/auth_routes.py:118` | `logout` uses `response.delete_cookie("session")` without matching cookie attributes (`path`, `samesite`, `secure`). On some clients/proxies the cookie may survive logout. | Use identical attributes used during set: `response.delete_cookie("session", path="/", samesite="lax", secure=os.environ.get("ENV") == "production", httponly=True)` |
+| High | `app/api/auth_routes.py:208` | Same cookie deletion mismatch in account deletion flow. | Apply same `delete_cookie` attributes as above. |
+| High | `app/main.py:39` and all state-changing endpoints | Cookie auth is enabled with `allow_credentials=True`, but no CSRF defense exists (`POST/PUT/DELETE` endpoints accept cross-site requests if browser sends cookie). | Add CSRF token validation (double-submit cookie or custom header token) for state-changing routes, or move to `SameSite="strict"` if product requirements allow. |
+| Medium | `app/auth.py:49` | `except (SignatureExpired, BadSignature, Exception)` catches all exceptions, suppressing internal auth bugs and reducing auditability. | Replace with `except (SignatureExpired, BadSignature): return None` and let unexpected exceptions bubble to logs/monitoring. |
+| Medium | `static/index.html:679` | `window.open(..., "_blank")` without `noopener,noreferrer` allows reverse-tabnabbing. | Use `window.open(url, "_blank", "noopener,noreferrer")`. |
+| Low | `app/api/auth_routes.py:85` | `insert_one` can race with another signup request for same email; duplicate key exception is not handled and may leak internal error. | Wrap `insert_one` in try/except `DuplicateKeyError` and return `409` consistently. |
+
+## Logic Bugs
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| High | `static/index.html:1122` | `realIdx` is derived by matching `front`+`back`; duplicate cards can map to wrong index and update wrong spaced-repetition state. | Preserve original index when shuffling (`S.shuffled = shuffle(S.cards.map((c,i)=>({...c,_idx:i})))`) and post `_idx` directly. |
+| High | `app/api/decks.py:219` | `update_one({"deck_id": deck_id}, ...)` does not scope by `user_id`; if deck IDs ever collide or security checks drift, wrong user data may be mutated. | Filter with both identifiers: `{"deck_id": deck_id, "user_id": user["user_id"]}`. |
+| Medium | `app/api/auth_routes.py:169-171` and `195-197` | `full_user` may be `None` (deleted concurrently), then `full_user["password_hash"]` crashes with 500. | Guard null: if `not full_user`, return `401`/`404` before password check. |
+| Medium | `app/api/history_routes.py:52` | `strftime("%b %-d")` is platform-dependent and fails on Windows. | Format with portable logic: `f"{dt.strftime('%b')} {dt.day}"`. |
+| Low | `app/api/decks.py:30-38` | In-memory rate limiter counts by IP globally; users behind same NAT can block each other. | Key limiter by `(user_id, ip)` or user_id only for authenticated uploads. |
+
+## UX / Flow Issues
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| Medium | `static/index.html:975` | After successful upload user only gets a toast; no direct CTA to start studying newly created deck. | Add action toast/button: `Study now` -> `startStudy(res.deck_id)`. |
+| Medium | `static/index.html:950-953` | Search empty state is not shown; UI appears broken when no deck names match. | In `renderAll`, render a “No matching decks” state when filtered result is empty and query is non-empty. |
+| Medium | `static/index.html:824-825`, `837-838` | Loader hides only in success/error branches; future early returns can leave loader stuck. | Wrap async auth actions in `try {...} catch {...} finally {hideLoader();}`. |
+| Low | `static/index.html:968` | Upload progress text is timer-based (not true progress), causing misleading feedback. | Use server-sent job progress or switch wording to non-step-based “Processing PDF...”. |
+
+## Performance Problems
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| High | `app/api/history_routes.py:70-77` | `/stats` loads all study sessions into memory to compute counts; this scales poorly. | Replace with Mongo aggregation (`$group`) and `count_documents` instead of materializing all sessions. |
+| High | `app/api/decks.py:146-153` | `/decks` computes due count by iterating all cards for each deck document; O(total cards) per list request. | Store `due_count` denormalized and update on review, or compute in DB pipeline with projected due cards only. |
+| Medium | `static/index.html:914-917` and `881-893` | `applyTilt` adds per-card mousemove handlers; many decks cause heavy event overhead/jank. | Disable tilt on touch devices and cap to first N visible cards, or use one delegated pointer handler. |
+| Medium | `static/index.html:716-754` | Particle animation runs continuously even when tab hidden, consuming CPU/battery. | Pause via `visibilitychange` and `cancelAnimationFrame`; respect `prefers-reduced-motion`. |
+| Low | `app/api/history_routes.py:30-33` | Query uses `$in` on 30-date array; workable now but suboptimal at scale. | Query with date range (`$gte/$lte`) and index on `(user_id, date)`. |
+
+## Code Quality Issues
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| Medium | `test_core.py:1-35` | This is an executable script, not an automated test; CI cannot validate behavior. | Convert to pytest tests with asserts and fixtures; remove print-driven flow. |
+| Medium | `requirements-dev.txt:89` | `starlette==1.0.0` conflicts with FastAPI-compatible ranges and may break runtime if installed together. | Pin Starlette to FastAPI-compatible version (or remove direct pin and let FastAPI resolve). |
+| Medium | `render.yaml:5`, `nixpacks.toml:2` | Both reference `requirements-prod.txt`, but file is absent; deployment will fail. | Change to `requirements.txt` or add missing `requirements-prod.txt`. |
+| Low | `README.md:1-3` | README is minimal and misses setup/env/deploy/test instructions. | Add full setup, env vars, local run, and troubleshooting sections. |
+| Low | `app/auth.py:55` and `app/api/auth_routes.py:45` | Duplicate user-sanitization helpers (`_clean`, `_safe_user`) increase drift risk. | Create one shared helper (`app/utils/serializers.py::safe_user`) and reuse. |
+
+## Mobile Responsiveness Issues
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| High | `static/index.html:157-163`, `195-197` | Sidebar is fixed at 240px and main content always offset; no responsive breakpoint. App is effectively unusable on small screens. | Add `@media (max-width: 768px)` to convert sidebar to drawer and set `#main-content { margin-left: 0; }`. |
+| Medium | `static/index.html:280` | Stats grid fixed to two columns; cards become cramped on phones. | Add media query: `.stats-grid { grid-template-columns: 1fr; }` on small widths. |
+| Medium | `static/index.html:332` | Study card fixed `height: 300px` can overflow short devices. | Use `min-height` + `max-height: 60vh` and responsive padding/font size. |
+| Medium | `static/index.html:396` and `419` | Toast and floating action stack share bottom-right area, overlapping on narrow screens. | On mobile, move toast to top-center or offset floating stack with larger bottom spacing. |
+
+## Accessibility Issues
+
+| Severity | File + line | Issue | Exact fix |
+|---|---|---|---|
+| High | `static/index.html:675`, `679`, `902`, `593` | Icon/emoji-only actionable controls lack accessible names and keyboard semantics. | Add `aria-label` on all icon-only buttons; convert clickable card container to button with keyboard handlers (`Enter`/`Space`). |
+| High | `static/index.html:448-451`, `459-463`, etc. | Form labels are visual only; they are not associated via `for`/`id`. | Add `for` on `<label>` and matching input `id`, or wrap input correctly. |
+| Medium | `static/index.html:66`, `111`, `116`, `118`, `418` | Hover styles exist, but explicit `:focus-visible` styling is missing for many controls. | Add global keyboard focus styles for `.btn`, `.nav-item`, `.float-btn`, `.deck-study-btn`, links, and inputs. |
+| Medium | `static/index.html:121`, `146`, `380`, toasts/errors | Dynamic status/error updates are not announced by screen readers. | Add `role="alert"` / `aria-live="polite"` regions for form errors, toast container, and loader text. |
+| Low | `static/index.html:471-579` | Semantic landmarks are incomplete (`main`, labeled `nav`, sections). | Use `<main>`, `<nav aria-label="Primary">`, and heading hierarchy for views. |
+
+## File Coverage Notes
+
+- Reviewed all files in repo tree at time of audit, including:
+  - Backend: `app/main.py`, `app/auth.py`, `app/db.py`, `app/api/*.py`, `app/core/*.py`
+  - Frontend: `static/index.html`
+  - Infra/config: `Procfile`, `render.yaml`, `runtime.txt`, `nixpacks.toml`, `.env.example`, `.gitignore`, `requirements*.txt`
+  - Tests/docs/notes: `test_core.py`, `README.md`, `Brain/*.md`, `.obsidian/*`, `Brain/.obsidian/*`
+- No functional/security issues were identified in Obsidian metadata files; they are project editor state only.

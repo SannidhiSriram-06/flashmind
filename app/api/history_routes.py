@@ -15,6 +15,25 @@ def _require_user(request: Request) -> dict:
     return user
 
 
+def _is_easy(s: dict) -> bool:
+    """quality==5 (Easy), or legacy result=='know'."""
+    if "quality" in s:
+        return s["quality"] == 5
+    return s.get("result") == "know"
+
+
+def _is_hard(s: dict) -> bool:
+    """quality==2 (Hard); no equivalent in legacy schema."""
+    return s.get("quality") == 2
+
+
+def _is_again(s: dict) -> bool:
+    """quality==0 (Again), or legacy result=='dont_know'."""
+    if "quality" in s:
+        return s["quality"] == 0
+    return s.get("result") == "dont_know"
+
+
 # ── GET /api/history ──────────────────────────────────────────────────────────
 
 @router.get("/history")
@@ -26,33 +45,39 @@ def get_history(request: Request):
     today = date.today()
     date_window = [(today - timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
 
-    # Fetch sessions in the window
     sessions = list(db.study_sessions.find(
         {"user_id": user["user_id"], "date": {"$in": date_window}},
-        {"_id": 0, "date": 1, "result": 1},
+        {"_id": 0, "date": 1, "quality": 1, "result": 1},
     ))
 
-    # Group by date
-    by_date: dict[str, dict] = {d: {"date": d, "total": 0, "known": 0, "learning": 0} for d in date_window}
+    by_date: dict[str, dict] = {
+        d: {"date": d, "total": 0, "easy": 0, "hard": 0, "again": 0}
+        for d in date_window
+    }
     for s in sessions:
         d = s["date"]
         if d in by_date:
             by_date[d]["total"] += 1
-            if s["result"] == "know":
-                by_date[d]["known"] += 1
+            if _is_easy(s):
+                by_date[d]["easy"] += 1
+            elif _is_hard(s):
+                by_date[d]["hard"] += 1
             else:
-                by_date[d]["learning"] += 1
+                by_date[d]["again"] += 1
 
-    # Format dates as "Apr 19" and return only days with activity or all 30
     result = []
     for d in date_window:
         entry = by_date[d]
         dt = date.fromisoformat(d)
         result.append({
-            "date": dt.strftime("%b %-d"),
+            "date": f"{dt.strftime('%b')} {dt.day}",
             "total": entry["total"],
-            "known": entry["known"],
-            "learning": entry["learning"],
+            "easy": entry["easy"],
+            "hard": entry["hard"],
+            "again": entry["again"],
+            # backward-compat aliases used by existing frontend code
+            "known": entry["easy"],
+            "learning": entry["again"],
         })
     return result
 
@@ -69,12 +94,12 @@ def get_stats(request: Request):
 
     sessions = list(db.study_sessions.find(
         {"user_id": user_id},
-        {"_id": 0, "result": 1, "date": 1},
+        {"_id": 0, "quality": 1, "result": 1, "date": 1},
     ))
 
     total_sessions = len(sessions)
-    known_count = sum(1 for s in sessions if s["result"] == "know")
-    average_score = round((known_count / total_sessions) * 100) if total_sessions else 0
+    easy_count = sum(1 for s in sessions if _is_easy(s))
+    average_score = round((easy_count / total_sessions) * 100) if total_sessions else 0
 
     # Best streak: longest run of consecutive days with ≥1 session
     active_dates = sorted({s["date"] for s in sessions})
