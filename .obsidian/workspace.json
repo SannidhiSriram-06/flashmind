@@ -11,10 +11,14 @@
             "id": "c90c147dc5b9076a",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Brain/flashmind-review.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "flashmind-review"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "Brain/flashmind-review.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks"
+              "title": "Backlinks for flashmind-review"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "Brain/flashmind-review.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from flashmind-review"
             }
           },
           {
@@ -150,12 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "Brain/flashmind-review.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of flashmind-review"
             }
           }
         ]
@@ -178,18 +185,19 @@
   },
   "active": "96fad86b8d8f6a97",
   "lastOpenFiles": [
+    "nixpacks.toml",
+    "requirements-prod.txt",
+    "Brain/Welcome.md",
+    "Brain/flashmind-review.md",
+    "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751/link_lists.bin",
+    "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751/length.bin",
+    "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751/header.bin",
+    "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751/data_level0.bin",
+    "chroma_db/e57e5873-222f-4f38-9ffe-b3065799a751",
+    "uploads/29b11f3a-169f-47de-b14e-f250dc887bdb.pdf",
     "runtime.txt",
     "render.yaml",
     "Procfile",
-    "Brain/flashmind-review.md",
-    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/link_lists.bin",
-    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/length.bin",
-    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/header.bin",
-    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe/data_level0.bin",
-    "chroma_db/226aab76-624f-473b-921a-5fc9d8bc5dfe",
-    "chroma_db/chroma.sqlite3-journal",
-    "uploads/f87e3b64-14f5-4a38-ad10-e1db2d704679.pdf",
-    "chroma_db/8d6eabe7-9e3b-455b-9f93-f647b38088ea/link_lists.bin",
     "venv/lib/python3.13/site-packages/pip-26.0.1.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md",
     "venv/lib/python3.13/site-packages/pip/_vendor/idna/LICENSE.md",
     "venv/lib/python3.13/site-packages/~ip-25.2.dist-info/licenses/src/pip/_vendor/idna/LICENSE.md"
