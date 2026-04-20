@@ -365,3 +365,14 @@ Run `pip freeze > requirements.txt` from your venv. This prevents surprise break
 ---
 
 *End of review. The codebase is solid for a challenge submission — the architecture is clean, the UI is well above average, and the core features work. The biggest risks for deployment are the CORS config, the SentenceTransformer memory usage, and the ephemeral ChromaDB storage. Fix those three and the quick wins above, and this is ready to impress.*
+
+---
+
+## Submission Checklist
+
+- [ ] Live URL working on mobile
+- [ ] GitHub repo public with README / ARCHITECTURE / DEPLOYMENT docs
+- [ ] Video recorded (2–5 mins) and uploaded
+- [ ] Google Doc write-up complete with open access (Anyone with link can view)
+- [ ] Submission form filled at https://forms.gle/...
+- [ ] Reply to Akash's email with live URL + GitHub + Google Doc + video links
