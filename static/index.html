@@ -247,9 +247,10 @@ html, body {
 .upload-card {
   border: 2px dashed rgba(255,255,255,0.2); padding: 48px 32px;
   text-align: center; cursor: pointer; margin-bottom: 36px;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s ease;
   position: relative;
 }
+.upload-card:hover { transform: translateY(-2px); }
 [data-theme="light"] .upload-card { border-color: rgba(0,0,0,0.15); }
 .upload-card:hover, .upload-card.drag-over { border-color: #2997ff; background: rgba(41,151,255,0.04); }
 .upload-card input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
@@ -518,7 +519,41 @@ html, body {
 
   /* History item */
   .history-item { grid-template-columns: 54px 1fr auto; gap: 10px; padding: 14px 16px; }
+
+  /* Study header mobile */
+  .study-deck-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .study-counter { font-size: 11px; }
+
+  /* Review buttons mobile */
+  .review-row { gap: 6px; }
+  .review-btn { min-height: 60px; font-size: 12px; padding: 8px 4px; }
+  .review-btn-sub { font-size: 9px; }
+
+  /* Toast mobile */
+  #toast-container { right: 12px; left: 12px; bottom: 90px; align-items: stretch; }
+  .toast { max-width: none; }
+
+  /* Keyboard hint hidden on mobile */
+  .kbd-hint { display: none; }
 }
+
+/* ── Card exit animation ─────────────────────────────────────────────────── */
+.card-exit { opacity: 0; transform: translateY(8px) scale(0.98); transition: all 120ms ease; }
+
+/* ── View enter animation ────────────────────────────────────────────────── */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.view-enter { animation: fadeInUp 180ms ease forwards; }
+
+/* ── Review button press ─────────────────────────────────────────────────── */
+.review-btn:active { transform: scale(0.97) !important; }
+
+/* ── Keyboard hint ───────────────────────────────────────────────────────── */
+.kbd-hint { font-size: 11px; color: var(--accent-gray); opacity: 0.6; margin-top: 4px; }
+
+/* ── Skeleton loaders ────────────────────────────────────────────────────── */
+@keyframes pulse { 0%,100% { opacity: .4; } 50% { opacity: .8; } }
+.skeleton { animation: pulse 1.5s ease infinite; }
+.skeleton-block { background: var(--panel-bg); border-radius: 8px; height: 80px; animation: pulse 1.5s ease infinite; }
 </style>
 </head>
 <body>
@@ -694,6 +729,7 @@ html, body {
         </div>
       </div>
       <div class="flip-hint" id="flip-hint">Click card or press Space to reveal</div>
+      <div class="kbd-hint">1 Again · 2 Hard · 3 Easy · Space to flip</div>
       <div class="review-row" id="review-row" style="display:none">
         <button class="review-btn" style="background:#FF453A;color:#fff" onclick="submitReview(0)">
           😓 Again<span class="review-btn-sub">Forgot it</span>
@@ -824,6 +860,7 @@ function closeSidebar() {
 // ─── Particles ────────────────────────────────────────────────────────────────
 (function initParticles() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.innerWidth <= 768) return;
 
   const canvas = document.getElementById('particle-canvas');
   const ctx = canvas.getContext('2d');
@@ -985,7 +1022,9 @@ const VIEW_TITLES = { home:'Home', decks:'My Decks', stats:'Stats', history:'His
 function showView(name) {
   S.view = name;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-  document.getElementById('view-' + name).classList.add('on');
+  const incoming = document.getElementById('view-' + name);
+  incoming.classList.add('on', 'view-enter');
+  setTimeout(() => incoming.classList.remove('view-enter'), 200);
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.v === name));
   document.getElementById('top-bar-title').textContent = VIEW_TITLES[name] || name;
   if (name === 'home')    loadHome();
@@ -1043,7 +1082,7 @@ function deckHTML(d, showDel = true) {
 function attachTilts(gridId) {
   document.querySelectorAll(`#${gridId} .deck-card`).forEach((el, i) => {
     el.style.setProperty('--i', i);
-    applyTilt(el);
+    if (i < 6) applyTilt(el);
   });
 }
 
@@ -1073,7 +1112,7 @@ function renderAll(decks) {
   const grid = document.getElementById('all-decks-grid');
   const q = document.getElementById('deck-search').value.trim();
   if (decks.length === 0 && q) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">🔍</span><div class="empty-state-title">No matching decks</div><div class="empty-state-sub">Try a different search term</div></div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">🔍</span><div class="empty-state-title">No matching decks</div><div class="empty-state-sub">Try a different search term</div><button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="document.getElementById('deck-search').value='';filterDecks()">Clear search</button></div>`;
     return;
   }
   grid.innerHTML = decks.length
@@ -1165,8 +1204,11 @@ document.getElementById('del-acc-pass').addEventListener('keydown', e => e.key =
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 async function loadStats() {
+  // Show pulse on stat cards while loading
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.add('skeleton'));
   try {
     const [stats, hist] = await Promise.all([api('GET','/api/stats'), api('GET','/api/history')]);
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('skeleton'));
     document.getElementById('s-decks').textContent    = stats.total_decks;
     document.getElementById('s-cards').textContent    = stats.total_cards_studied;
     document.getElementById('s-sessions').textContent = stats.total_sessions;
@@ -1185,17 +1227,20 @@ async function loadStats() {
         <div class="bar-label">${day}</div>
       </div>`;
     }).join('');
-  } catch { toast('Could not load stats', 'error'); }
+  } catch { document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('skeleton')); toast('Could not load stats', 'error'); }
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
 async function loadHistory() {
   const list = document.getElementById('history-list');
-  list.innerHTML = '<div class="history-empty">Loading…</div>';
+  list.innerHTML = '<div class="skeleton-block" style="margin-bottom:8px"></div>'.repeat(3);
   try {
     const hist = await api('GET', '/api/history');
     const active = hist.filter(d => d.total > 0).reverse();
-    if (!active.length) { list.innerHTML = '<div class="history-empty">No study sessions yet. Start studying!</div>'; return; }
+    if (!active.length) {
+      list.innerHTML = '<div class="history-empty">No study sessions yet.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="showView(\'decks\')">Start studying</button></div>';
+      return;
+    }
     list.innerHTML = active.map(d => {
       const pct = Math.round((d.easy / d.total) * 100);
       const col = pct >= 70 ? '#30D158' : pct >= 40 ? '#FF9F0A' : '#FF453A';
@@ -1290,8 +1335,13 @@ async function submitReview(quality) {
     S.easy++;
   }
 
-  S.queuePos++;
-  if (S.queuePos >= S.queue.length) showCompletion(); else renderCard();
+  const scene = document.getElementById('flip-scene');
+  scene.classList.add('card-exit');
+  setTimeout(() => {
+    scene.classList.remove('card-exit');
+    S.queuePos++;
+    if (S.queuePos >= S.queue.length) showCompletion(); else renderCard();
+  }, 120);
 }
 
 function showCompletion() {
@@ -1315,8 +1365,9 @@ function showCompletion() {
 // ─── Scroll: pill nav shrink ──────────────────────────────────────────────────
 document.getElementById('content-area').addEventListener('scroll', function() {
   const bar = document.getElementById('top-bar-wrap');
-  if (this.scrollTop > 20) bar.style.padding = '14px 48px 0';
-  else bar.style.padding = '20px 32px 0';
+  const mobile = window.innerWidth <= 768;
+  if (this.scrollTop > 20) bar.style.padding = mobile ? '10px 16px 0' : '14px 48px 0';
+  else bar.style.padding = mobile ? '14px 16px 0' : '20px 32px 0';
 });
 
 // ─── Keyboard shortcuts (study mode) ─────────────────────────────────────────

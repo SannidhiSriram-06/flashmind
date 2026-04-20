@@ -1,6 +1,8 @@
 import os
 import random
+import time
 import uuid
+from collections import defaultdict
 from datetime import datetime
 
 from email_validator import EmailNotValidError, validate_email
@@ -31,9 +33,25 @@ _AVATAR_COLORS = [
 _COOKIE_OPTS = dict(
     httponly=True,
     max_age=604800,
-    samesite="lax",
+    samesite="strict",
     secure=os.environ.get("ENV") == "production",
 )
+
+# ── Login rate limiter (10 attempts / IP / 15 min) ───────────────────────────
+_login_log: dict[str, list[float]] = defaultdict(list)
+_LOGIN_LIMIT = 10
+_LOGIN_WINDOW = 15 * 60  # seconds
+
+
+def _check_login_rate_limit(ip: str) -> None:
+    now = time.time()
+    _login_log[ip] = [t for t in _login_log[ip] if now - t < _LOGIN_WINDOW]
+    if len(_login_log[ip]) >= _LOGIN_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts, please wait",
+        )
+    _login_log[ip].append(now)
 
 
 def _set_session(response: Response, user_id: str) -> str:
@@ -48,7 +66,7 @@ def _delete_session(response: Response) -> None:
         "session",
         path="/",
         httponly=True,
-        samesite="lax",
+        samesite="strict",
         secure=os.environ.get("ENV") == "production",
     )
 
@@ -67,7 +85,6 @@ class SignupBody(BaseModel):
 
 @router.post("/signup")
 def signup(body: SignupBody, response: Response):
-    # Validate email
     try:
         validated = validate_email(body.email, check_deliverability=False)
         email = validated.email
@@ -106,7 +123,10 @@ class LoginBody(BaseModel):
 
 
 @router.post("/login")
-def login(body: LoginBody, response: Response):
+def login(body: LoginBody, response: Response, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    _check_login_rate_limit(ip)
+
     try:
         validated = validate_email(body.email, check_deliverability=False)
         email = validated.email
@@ -211,7 +231,6 @@ def delete_account(body: DeleteAccountBody, request: Request, response: Response
     if not verify_password(body.password, full_user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect password")
 
-    # Clean up ChromaDB collections for each deck
     from app.core.vector_store import delete_collection
     for deck in db.decks.find({"user_id": user["user_id"]}, {"deck_id": 1}):
         delete_collection(deck["deck_id"])

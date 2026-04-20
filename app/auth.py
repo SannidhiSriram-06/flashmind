@@ -17,7 +17,7 @@ def _get_secret_key() -> str:
                 "SECRET_KEY must be set in production. "
                 "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
             )
-        return "dev-only-insecure-change-me"
+        raise RuntimeError("SECRET_KEY must be set in environment")
     return key
 
 

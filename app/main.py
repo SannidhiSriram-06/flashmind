@@ -2,10 +2,11 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 load_dotenv()
 
@@ -30,6 +31,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FlashMind", lifespan=lifespan)
+
+
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+
+app.add_middleware(_SecurityHeadersMiddleware)
 
 # CORS: read from env so production origins work on Render
 _origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:8000").split(",")]
